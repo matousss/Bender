@@ -1,5 +1,6 @@
 import _queue
 import asyncio
+import datetime
 import typing
 import time
 from queue import Queue
@@ -38,7 +39,7 @@ FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconne
 
 
 class YoutubeMusic(commands.Cog):
-    @tasks.loop(seconds=10, count=None)
+    @tasks.loop(seconds=180, count=None)
     async def event_loop(self):
         print("<INFO> Starting garbage collection...")
 
@@ -93,11 +94,12 @@ class YoutubeMusic(commands.Cog):
             await destination.connect()
             await ctx.send(Messages.join + destination.name)
             print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
+            self.music_players.add(str(ctx.guild.id), MusicPlayer(str(ctx.guild.id), ctx.voice_client))
         except:
             if destination is None:
-                print("<ERROR> Error occured while joining channel: no channel specified or user is not in channel")
+                print("<ERROR> Error occurred while joining channel: no channel specified or user is not in channel")
             else:
-                print("<ERROR> Error occured while joining " + destination.name + "#" + str(destination.id))
+                print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
             await ctx.send(Messages.join_error)
         pass
 
@@ -169,9 +171,12 @@ class YoutubeMusic(commands.Cog):
         await self.music_players[str(ctx.guild.id)].skip()
         await ctx.send("Skipping..")
 
-
     pass
-
+    @commands.command(name="nowplaying", aliases = ["np"])
+    async def _nowplaying(self,ctx):
+        if ctx.voice_client and ctx.voice_client.is_connected and self.music_players[str(ctx.guild.id)] and ctx.voice_client.is_playing():
+            await ctx.send("Now is playing: `" + str(self.music_players[str(ctx.guild.id)].now_playing["title"]) + "`")
+        pass
 
 class SoundBoard(commands.Cog):
     def __init__(self, bot):
@@ -225,15 +230,19 @@ class PlayQueue(object):
             song = self.ytdl.extract_info(what, download=False)
             # self.queue.put(song)
             print("Added to queue: " + song["title"])
-            await ctx.send("Added to queue: " + song["title"])
-            print(str(song))
+            await ctx.send("Added to queue: `" + song["title"] + " [" + str(
+                datetime.timedelta(seconds=round(song["duration"]))) + "]`")
+
         elif what.startswith("https://www.youtube.com/playlist?list="):
-            songs = self.ytdl.extract_info(what, download=False)
+            songs = self.ytdl.extract_info(what, download=False)["entries"]
+
             for song in songs:
+
                 self.queue.put(song)
                 print("Added to queue: " + song["title"])
-                await ctx.send("Added to queue: " + song["title"])
-                # print(str(song))
+                await ctx.send("Added to queue: `" + song["title"] + " [" + str(
+                    datetime.timedelta(seconds=round(song["duration"]))) + "]`")
+
         else:
 
             results = self.ytdl.extract_info(f"ytsearch:{what}", download=False)
@@ -241,7 +250,8 @@ class PlayQueue(object):
             self.queue.put(song)
             # print(str(song))
             print("Added to queue: " + song["title"])
-            await ctx.send("Added to queue: " + song["title"])
+            await ctx.send("Added to queue: `" + song["title"] + " [" + str(
+                datetime.timedelta(seconds=round(song["duration"]))) + "]`")
 
         pass
 
@@ -261,8 +271,25 @@ class PlayQueue(object):
 class MusicPlayer(object):
     @tasks.loop(seconds=5, count=None)
     async def play_next(self):
-        if not self.voice_client.is_playing() or not self.voice_client.is_paused():
+        if not self.voice_client.is_playing() and not self.voice_client.is_paused() and not self.anything_in_queue.is_running():
+            self.anything_in_queue.start()
+        pass
+
+    @play_next.after_loop
+    async def after_play_next(self):
+        self.anything_in_queue.stop()
+
+    @tasks.loop(seconds=5, count=36)
+    async def anything_in_queue(self):
+        if not self.queue.empty():
             self.next()
+            self.anything_in_queue.stop()
+        pass
+
+    @anything_in_queue.after_loop
+    async def after_anything_in_queue(self):
+        if not self.voice_client.is_playing():
+            self.destroy = True
         pass
 
     def __init__(self, key: str, voice_client: VoiceClient):
@@ -275,6 +302,9 @@ class MusicPlayer(object):
         self.play_next.start()
         pass
 
+    def __del__(self):
+        self.play_next.stop()
+
     async def play(self, ctx, what: str):
 
         await self.queue.add(ctx, what)
@@ -283,18 +313,18 @@ class MusicPlayer(object):
         # if not self.voice_client.is_playing():
         #     # ctx.send("Added to queue: "+ str(what))
         #     self.next()
-        if not self.play_next.is_running():
-            self.play_next.start()
+        # if not self.play_next.is_running():
+        #     self.play_next.start()
 
     def next(self):
 
         try:
             print("Is queue empty:" + str(self.queue.empty()))
-            song = self.queue.get(True, 180)
+            song = self.queue.get(False, 1)
 
         except _queue.Empty:
             self.destroy = True
-            print("označeno ke zničení")
+            print("chyba")
             return
         self.now_playing = song
 
@@ -316,7 +346,6 @@ class MusicPlayer(object):
         self.next()
         pass
 
-
     pass
 
 
@@ -330,7 +359,7 @@ class Players(dict):
         pass
 
     def removekey(self, key):
-        print("Removed key: "+key)
+        print("Removed key: " + key)
         r = self[key]
         del r
 

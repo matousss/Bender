@@ -8,7 +8,7 @@ VERSION = os.environ.get("VERSION")
 PREFIX = str(os.environ.get("PREFIX"))
 
 
-class MessagesTexts():
+class MessagesTexts:
     if not os.path.exists("lang.json"):
         os.system("generatelang.py 1")
     with open("lang.json", "r") as lang_file:
@@ -62,7 +62,7 @@ class MessagesTexts():
         self.ping = message[0]["ping_message"]
 
 
-class MessagesHandler():
+class MessagesHandler:
     def __init__(self, bot):
         self.bot = bot
         print("Initialized modules.messages.Messages")
