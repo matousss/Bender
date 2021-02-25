@@ -4,6 +4,9 @@ import sys
 
 from discord.ext import commands
 
+from dotenv import load_dotenv
+
+load_dotenv()
 VERSION = os.environ.get("VERSION")
 PREFIX = str(os.environ.get("PREFIX"))
 
@@ -14,7 +17,7 @@ class MessagesTexts:
     with open("lang.json", "r") as lang_file:
         lang = json.load(lang_file)
     try:
-        message = lang["cs"]
+        message = lang["en"]
         join = message[0]["join_message"]
         join_error = message[0]["join_error_message"]
         join_error_b = message[0]["join_error_message_b"]
@@ -40,7 +43,7 @@ class MessagesTexts:
     def __init__(self):
         with open("lang.json", "r") as lang_file:
             lang = json.load(lang_file)
-        message = lang["cs"]
+        message = lang["en"]
         self.join = message[0]["join_message"]
         self.join_error = message[0]["join_error_message"]
         self.join_error_b = message[0]["join_error_message_b"]

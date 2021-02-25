@@ -1,7 +1,7 @@
 import sys
 import typing
 from .messages import MessagesHandler
-
+from .messages import MessagesTexts
 from discord.ext import commands
 from googletrans import Translator
 from discord import utils as dutils
@@ -26,7 +26,7 @@ class Utils(commands.Cog):
 
     @commands.command(name="info")
     async def _info(self, ctx):
-        await MessagesHandler.sendMessage(ctx, "info")
+        await MessagesHandler.sendMessage(self,ctx, MessagesTexts.info)
         pass
 
     @commands.command(name="ping")
