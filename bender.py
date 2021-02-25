@@ -29,11 +29,12 @@ load_dotenv()
 TOKEN = os.environ.get("DISCORD_TOKEN")
 PREFIX = str(os.environ.get("PREFIX"))
 VERSION = os.environ.get("VERSION")
+
 LANGCODES = ["en", "cs"]
 
 
 class Settings:
-    language = "cs"
+    language = "en"
 
 
 intents = discord.Intents.default()
