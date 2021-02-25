@@ -21,7 +21,7 @@ from threading import Thread
 from googletrans import Translator
 import pafy
 from modules.messages import MessagesTexts as Messages
-import modules.music
+import modules.audio
 import modules.shits
 import modules.utils
 
@@ -85,8 +85,8 @@ async def on_command_error(ctx, error):
 
 
 def init_modules():
-    bot.add_cog(modules.music.YoutubeMusic(bot))
-    bot.add_cog(modules.music.SoundBoard(bot))
+    bot.add_cog(modules.audio.YoutubeMusic(bot))
+    bot.add_cog(modules.audio.SoundBoard(bot))
     bot.add_cog(modules.utils.Greetings(bot))
     bot.add_cog(modules.utils.Utils(bot))
     bot.add_cog(modules.utils.Moderation(bot))
