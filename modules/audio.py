@@ -105,7 +105,8 @@ class YoutubeMusic(commands.Cog):
         if channel is None:
             await ctx.send(Messages.leave_error)
             return
-        self.music_players.removekey(str(ctx.guild.id))
+        if str(ctx.guild.id) in self.music_players:
+            self.music_players.removekey(str(ctx.guild.id))
         await channel.disconnect()
         await ctx.send(Messages.leave)
 
@@ -170,8 +171,14 @@ class YoutubeMusic(commands.Cog):
 
     @commands.command(name="nowplaying", aliases=["np"])
     async def _nowplaying(self, ctx):
-        if ctx.voice_client and ctx.voice_client.is_connected and self.music_players[str(ctx.guild.id)] and ctx.voice_client.is_playing():
-            await ctx.send("Now is playing: `" + str(self.music_players[str(ctx.guild.id)].now_playing["title"]) + "`")
+        if ctx.voice_client and ctx.voice_client.is_connected:
+            if ctx.voice_client.is_playing():
+                if self.music_players[str(ctx.guild.id)]:
+                    await ctx.send("Now is playing: `" + str(self.music_players[str(ctx.guild.id)].now_playing["title"]) + "`")
+                else:
+                    await ctx.send("Soundboard is now using voice client")
+        else:
+            await ctx.send("Messages.not_connected")
         pass
 
 
@@ -195,11 +202,13 @@ class SoundBoard(commands.Cog):
                         print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
 
                     except:
-                        print("<ERROR> Error occured while joining " + destination.name + "#" + str(destination.id))
+                        print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
                         await ctx.send(Messages.join_error)
                 else:
                     await ctx.send(Messages.join_error)
                     return
+        elif ctx.voice_client.is_playing:
+            await ctx.send("Messages.busy")
         # try:
         with youtube_dl.YoutubeDL(YTDL_OPTIONS) as ytdl:
             url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ&ab_channel=RickAstleyVEVO"

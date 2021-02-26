@@ -76,10 +76,11 @@ async def on_command_error(ctx, error):
     if isinstance(error, discord.ext.commands.errors.NotOwner):
         await ctx.send("Vyser si oko " + (ctx.author.mention) + "!")
     if isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
-        await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
+        #await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
+        await ctx.send("Messages.on_cooldown"+"`" + str(int(error.cooldown.per)) + "s` saláme!")
         return
     if isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
-        await ctx.send("Chybí ti parametry!")
+        await ctx.send("Messages.missings_param")
         return
     raise error
 
