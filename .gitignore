@@ -1,3 +1,10 @@
 # Project exclude paths
 /venv/
 /.env
+/bot.bat
+/debyl01.bat
+/debyl02.bat
+/debyl03.bat
+/guildSettings.sql
+/lang.json
+/spawnDebyl.py
