@@ -1,22 +1,15 @@
 import _queue
-import asyncio
 import datetime
 import typing
-import time
 from queue import Queue
-from threading import Thread
-
-from async_timeout import timeout
-from discord.ext import commands
-from discord import utils
+import youtube_dl
 from discord import FFmpegPCMAudio
 from discord import VoiceClient
+from discord import utils
+from discord.ext import commands
+from discord.ext import tasks
 from .messages import MessagesTexts as Messages
 from .utils import benderUtils
-from .messages import MessagesTexts as Messages
-from .messages import MessagesHandler
-import youtube_dl
-from discord.ext import tasks
 
 YTDL_OPTIONS = {
     'format': 'bestaudio',
@@ -86,6 +79,7 @@ class YoutubeMusic(commands.Cog):
                 try:
                     await ctx.voice_client.move_to(destination)
                     await ctx.send(Messages.join + destination.name)
+
                 except:
                     await ctx.send(Messages.join_error)
                 return
@@ -95,6 +89,7 @@ class YoutubeMusic(commands.Cog):
             await ctx.send(Messages.join + destination.name)
             print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
             self.music_players.add(str(ctx.guild.id), MusicPlayer(str(ctx.guild.id), ctx.voice_client))
+
         except:
             if destination is None:
                 print("<ERROR> Error occurred while joining channel: no channel specified or user is not in channel")
@@ -130,7 +125,7 @@ class YoutubeMusic(commands.Cog):
                     await ctx.send(Messages.join + destination.name)
                     print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
                 except:
-                    print("<ERROR> Error occured while joining " + destination.name + "#" + str(destination.id))
+                    print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
                     await ctx.send(Messages.join_error)
             else:
                 await ctx.send(Messages.join_error)
@@ -172,11 +167,13 @@ class YoutubeMusic(commands.Cog):
         await ctx.send("Skipping..")
 
     pass
-    @commands.command(name="nowplaying", aliases = ["np"])
-    async def _nowplaying(self,ctx):
+
+    @commands.command(name="nowplaying", aliases=["np"])
+    async def _nowplaying(self, ctx):
         if ctx.voice_client and ctx.voice_client.is_connected and self.music_players[str(ctx.guild.id)] and ctx.voice_client.is_playing():
             await ctx.send("Now is playing: `" + str(self.music_players[str(ctx.guild.id)].now_playing["title"]) + "`")
         pass
+
 
 class SoundBoard(commands.Cog):
     def __init__(self, bot):
@@ -196,6 +193,7 @@ class SoundBoard(commands.Cog):
                         await destination.connect()
                         await ctx.send(Messages.join + destination.name)
                         print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
+
                     except:
                         print("<ERROR> Error occured while joining " + destination.name + "#" + str(destination.id))
                         await ctx.send(Messages.join_error)
@@ -237,7 +235,6 @@ class PlayQueue(object):
             songs = self.ytdl.extract_info(what, download=False)["entries"]
 
             for song in songs:
-
                 self.queue.put(song)
                 print("Added to queue: " + song["title"])
                 await ctx.send("Added to queue: `" + song["title"] + " [" + str(
@@ -300,6 +297,7 @@ class MusicPlayer(object):
         self.key = key
         self.destroy = False
         self.play_next.start()
+
         pass
 
     def __del__(self):
