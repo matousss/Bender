@@ -9,7 +9,8 @@ from discord import utils
 from discord.ext import commands
 from discord.ext import tasks
 from .messages import MessagesTexts as Messages
-from .utils import benderUtils
+from .utils import BenderUtils
+butils = BenderUtils()
 
 YTDL_OPTIONS = {
     'format': 'bestaudio',
@@ -59,7 +60,7 @@ class YoutubeMusic(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def _join(self, ctx, channel: typing.Optional[str] = None):
         if channel is not None:
-            destination = benderUtils.getChannel(channel)
+            destination = butils.getChannel(ctx, channel)
             # if channel.startswith("<#"):
             #     destination = utils.get(ctx.guild.channels, id=int(channel[2:].replace(">", "")))
             # elif channel.isnumeric():
@@ -207,7 +208,7 @@ class SoundBoard(commands.Cog):
                 else:
                     await ctx.send(Messages.join_error)
                     return
-        elif ctx.voice_client.is_playing:
+        elif ctx.voice_client.is_playing is True:
             await ctx.send("Messages.busy")
         # try:
         with youtube_dl.YoutubeDL(YTDL_OPTIONS) as ytdl:

@@ -7,7 +7,7 @@ from googletrans import Translator
 from discord import utils as dutils
 
 
-class benderUtils():
+class BenderUtils():
     def getChannel(self, ctx, channel: str):
         if channel.startswith("<#"):
             return dutils.get(ctx.guild.channels, id=int(channel[2:].replace(">", "")))
@@ -17,7 +17,7 @@ class benderUtils():
             return dutils.get(ctx.guild.channels, name=channel)
 
     pass
-
+butils = BenderUtils()
 
 class Utils(commands.Cog):
     def __init__(self, bot):
@@ -166,7 +166,7 @@ class Moderation(commands.Cog):
             await ctx.send("Syntax error")
             return
         if channel is not None:
-            destination = benderUtils.getChannel(channel)
+            destination = butils.getChannel(ctx ,channel)
 
         if ctx.author.voice and ctx.author.voice.channel and channel is None:
             destination = ctx.author.voice.channel
@@ -242,10 +242,10 @@ class Moderation(commands.Cog):
                 users += arg_destination
 
         if get_destination is not None:
-            destination = benderUtils.getChannel(get_destination)
+            destination = butils.getChannel(ctx, get_destination)
 
         if get_source is not None:
-            source = benderUtils.getChannel(get_source)
+            source = butils.getChannel(ctx, get_source)
         if source is None or destination is None:
             await ctx.send("Wrong channel!")
             return
