@@ -74,10 +74,10 @@ async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
         return
     if isinstance(error, discord.ext.commands.errors.NotOwner):
-        await ctx.send("Vyser si oko " + (ctx.author.mention) + "!")
+        await ctx.send("Messages.error_not_owner " + (ctx.author.mention) + "!")
     if isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
         #await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
-        await ctx.send("Messages.on_cooldown"+"`" + str(int(error.cooldown.per)) + "s` saláme!")
+        await ctx.send("Messages.on_cooldown"+" `" + str(int(error.cooldown.per)) + "s`!")
         return
     if isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
         await ctx.send("Messages.missings_param")
@@ -88,7 +88,7 @@ async def on_command_error(ctx, error):
 def init_modules():
     bot.add_cog(modules.audio.YoutubeMusic(bot))
     bot.add_cog(modules.audio.SoundBoard(bot))
-    bot.add_cog(modules.utils.Greetings(bot))
+    #bot.add_cog(modules.utils.Greetings(bot))
     bot.add_cog(modules.utils.Utils(bot))
     bot.add_cog(modules.utils.Moderation(bot))
     bot.add_cog(modules.shits.Shits(bot))

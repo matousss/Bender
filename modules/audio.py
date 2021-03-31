@@ -3,17 +3,20 @@ import datetime
 import typing
 from queue import Queue
 import youtube_dl
+import ytmdl
 from discord import FFmpegPCMAudio
 from discord import VoiceClient
 from discord import utils
+from discord import embeds
 from discord.ext import commands
 from discord.ext import tasks
 from .messages import MessagesTexts as Messages
 from .utils import BenderUtils
+
 butils = BenderUtils()
 
 YTDL_OPTIONS = {
-    'format': 'bestaudio',
+    'format': 'bestaudio/best',
     'extractaudio': True,
     'audioformat': 'mp3',
     'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
@@ -175,7 +178,8 @@ class YoutubeMusic(commands.Cog):
         if ctx.voice_client and ctx.voice_client.is_connected:
             if ctx.voice_client.is_playing():
                 if self.music_players[str(ctx.guild.id)]:
-                    await ctx.send("Now is playing: `" + str(self.music_players[str(ctx.guild.id)].now_playing["title"]) + "`")
+                    await ctx.send(
+                        "Now is playing: `" + str(self.music_players[str(ctx.guild.id)].now_playing["title"]) + "`")
                 else:
                     await ctx.send("Soundboard is now using voice client")
         else:
@@ -222,6 +226,13 @@ class SoundBoard(commands.Cog):
     pass
 
 
+class PlayException(Exception):
+    def __init__(self):
+        pass
+
+    pass
+
+
 class PlayQueue(object):
 
     def __init__(self):
@@ -230,6 +241,11 @@ class PlayQueue(object):
         pass
 
     async def add(self, ctx, what: str):
+
+        if what.startswith("https://music.youtube"):
+            what = what.replace("music", "www", 1)
+
+        await ctx.send("Messages.searching")
         if what.startswith("https://www.youtube.com/watch?v=") or what.startswith("https://youtu.be/"):
             # video = pafy.new(play)
             # bestsource = video.getbestaudio()
@@ -238,24 +254,42 @@ class PlayQueue(object):
             song = self.ytdl.extract_info(what, download=False)
             # self.queue.put(song)
             print("Added to queue: " + song["title"])
-            await ctx.send("Added to queue: `" + song["title"] + " [" + str(
+            embed_message = embeds.Embed(title="Messages.added_to_queue_message", description="Desc", color=0x00ff00)
+            embed_message.add_field(name="song", value="Added to queue: `" + song["title"] + " [" + str(
                 datetime.timedelta(seconds=round(song["duration"]))) + "]`")
+            await ctx.send(embed = embed_message)
 
         elif what.startswith("https://www.youtube.com/playlist?list="):
             songs = self.ytdl.extract_info(what, download=False)["entries"]
 
+            message = " `"
             for song in songs:
                 self.queue.put(song)
                 print("Added to queue: " + song["title"])
-                await ctx.send("Added to queue: `" + song["title"] + " [" + str(
-                    datetime.timedelta(seconds=round(song["duration"]))) + "]`")
+
+                added_song_info = song["title"] + " [" + str(
+                    datetime.timedelta(seconds=round(song["duration"]))) + "]\n"
+
+                if len(message)+len(added_song_info) > 1900:
+                    await ctx.send("Messages.added_to_queue_message"+message+"`")
+                    message = " `"
+                else:
+                    message += added_song_info
+            await ctx.send("Messages.added_to_queue_message " + message)
 
         else:
+            try:
+                results = self.ytdl.extract_info(f"ytsearch1:{what}", download=False)
+            except:
+                await ctx.send("Messages.search_error")
+                return
+            try:
+                song = results["entries"][0]
+            except:
+                raise PlayException()
 
-            results = self.ytdl.extract_info(f"ytsearch:{what}", download=False)
-            song = results["entries"][0]
             self.queue.put(song)
-            # print(str(song))
+
             print("Added to queue: " + song["title"])
             await ctx.send("Added to queue: `" + song["title"] + " [" + str(
                 datetime.timedelta(seconds=round(song["duration"]))) + "]`")
@@ -278,6 +312,9 @@ class PlayQueue(object):
 class MusicPlayer(object):
     @tasks.loop(seconds=5, count=None)
     async def play_next(self):
+        if not self.voice_client:
+            YoutubeMusic._join()
+            self.destroy = False
         if not self.voice_client.is_playing() and not self.voice_client.is_paused() and not self.anything_in_queue.is_running():
             self.anything_in_queue.start()
         pass
@@ -290,6 +327,7 @@ class MusicPlayer(object):
     async def anything_in_queue(self):
         if not self.queue.empty():
             self.next()
+        else:
             self.anything_in_queue.stop()
         pass
 
@@ -314,8 +352,12 @@ class MusicPlayer(object):
         self.play_next.stop()
 
     async def play(self, ctx, what: str):
-
-        await self.queue.add(ctx, what)
+        try:
+            self.anything_in_queue.stop()
+            await self.queue.add(ctx, what)
+            self.anything_in_queue.start()
+        except PlayException:
+            await ctx.send("play_message_error")
         # print("Added to queue: " + str(what))
         # print(str(self.queue))
         # if not self.voice_client.is_playing():
