@@ -246,6 +246,7 @@ class PlayQueue(object):
             what = what.replace("music", "www", 1)
 
         await ctx.send("Messages.searching")
+        embed_message = embeds.Embed(title="Messages.added_to_queue_message", color=0x00ff00)
         if what.startswith("https://www.youtube.com/watch?v=") or what.startswith("https://youtu.be/"):
             # video = pafy.new(play)
             # bestsource = video.getbestaudio()
@@ -254,8 +255,8 @@ class PlayQueue(object):
             song = self.ytdl.extract_info(what, download=False)
             # self.queue.put(song)
             print("Added to queue: " + song["title"])
-            embed_message = embeds.Embed(title="Messages.added_to_queue_message", description="Desc", color=0x00ff00)
-            embed_message.add_field(name="song", value="Added to queue: `" + song["title"] + " [" + str(
+
+            embed_message.add_field( value="`" + song["title"] + " [" + str(
                 datetime.timedelta(seconds=round(song["duration"]))) + "]`")
             await ctx.send(embed = embed_message)
 
@@ -291,8 +292,10 @@ class PlayQueue(object):
             self.queue.put(song)
 
             print("Added to queue: " + song["title"])
-            await ctx.send("Added to queue: `" + song["title"] + " [" + str(
+
+            embed_message.add_field( value="`" + song["title"] + " [" + str(
                 datetime.timedelta(seconds=round(song["duration"]))) + "]`")
+            await ctx.send(embed = embed_message)
 
         pass
 
@@ -313,9 +316,10 @@ class MusicPlayer(object):
     @tasks.loop(seconds=5, count=None)
     async def play_next(self):
         if not self.voice_client:
-            YoutubeMusic._join()
+            await YoutubeMusic._join()
             self.destroy = False
-        if not self.voice_client.is_playing() and not self.voice_client.is_paused() and not self.anything_in_queue.is_running():
+        if not self.voice_client.is_playing() and not self.voice_client.is_paused() and \
+                not self.anything_in_queue.is_running():
             self.anything_in_queue.start()
         pass
 
@@ -327,7 +331,6 @@ class MusicPlayer(object):
     async def anything_in_queue(self):
         if not self.queue.empty():
             self.next()
-        else:
             self.anything_in_queue.stop()
         pass
 
