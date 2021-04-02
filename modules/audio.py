@@ -1,17 +1,23 @@
 import _queue
+import asyncio
 import datetime
+import functools
+import threading
 import typing
 from queue import Queue
+
+import promise
+import asyncbg
 import youtube_dl
-import ytmdl
+
 from discord import FFmpegPCMAudio
 from discord import VoiceClient
 from discord import utils
 from discord import embeds
 from discord.ext import commands
 from discord.ext import tasks
-from .messages import MessagesTexts as Messages
-from .utils import BenderUtils
+from modules.messages import MessagesTexts as Messages
+from modules.utils import BenderUtils
 
 butils = BenderUtils()
 
@@ -29,6 +35,7 @@ YTDL_OPTIONS = {
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0',
+
 }
 
 FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -55,9 +62,11 @@ class YoutubeMusic(commands.Cog):
     def __init__(self, bot):
 
         self.bot = bot
-        print("Initialized modules.audio.YoutubeMusic")
+
         self.music_players = Players()
         self.event_loop.start()
+
+        print("Initialized modules.audio.YoutubeMusic")
 
     @commands.command(name="join", aliases=["j", "summon"], description=Messages.join_des, brief=Messages.join_brief)
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -129,6 +138,7 @@ class YoutubeMusic(commands.Cog):
                     await destination.connect()
                     await ctx.send(Messages.join + destination.name)
                     print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
+
                 except:
                     print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
                     await ctx.send(Messages.join_error)
@@ -182,6 +192,8 @@ class YoutubeMusic(commands.Cog):
                         "Now is playing: `" + str(self.music_players[str(ctx.guild.id)].now_playing["title"]) + "`")
                 else:
                     await ctx.send("Soundboard is now using voice client")
+            else:
+                await ctx.send("Messages.not_playing")
         else:
             await ctx.send("Messages.not_connected")
         pass
@@ -227,7 +239,8 @@ class SoundBoard(commands.Cog):
 
 
 class PlayException(Exception):
-    def __init__(self):
+    def __init__(self, *, description=""):
+        self.description = description
         pass
 
     pass
@@ -238,31 +251,37 @@ class PlayQueue(object):
     def __init__(self):
         self.queue = Queue()
         self.ytdl = youtube_dl.YoutubeDL(YTDL_OPTIONS)
+
         pass
 
     async def add(self, ctx, what: str):
 
+        await ctx.send("Messages.searching")
+        loop = asyncio.get_running_loop()
         if what.startswith("https://music.youtube"):
             what = what.replace("music", "www", 1)
 
-        await ctx.send("Messages.searching")
         embed_message = embeds.Embed(title="Messages.added_to_queue_message", color=0x00ff00)
         if what.startswith("https://www.youtube.com/watch?v=") or what.startswith("https://youtu.be/"):
             # video = pafy.new(play)
             # bestsource = video.getbestaudio()
             # playable = bestsource.url
 
-            song = self.ytdl.extract_info(what, download=False)
+            song = await loop.run_in_executor(
+                None, functools.partial(self.ytdl.extract_info, what, download=False)
+            )
             # self.queue.put(song)
             print("Added to queue: " + song["title"])
 
-            embed_message.add_field( value="`" + song["title"] + " [" + str(
+            embed_message.add_field(name='\u200b', value="`" + song["title"] + " [" + str(
                 datetime.timedelta(seconds=round(song["duration"]))) + "]`")
-            await ctx.send(embed = embed_message)
+            # await ctx.send(embed=embed_message)
 
         elif what.startswith("https://www.youtube.com/playlist?list="):
-            songs = self.ytdl.extract_info(what, download=False)["entries"]
-
+            songs = await loop.run_in_executor(
+                None, functools.partial(self.ytdl.extract_info,what, download=False)
+            )
+            songs = songs["entries"]
             message = " `"
             for song in songs:
                 self.queue.put(song)
@@ -270,34 +289,42 @@ class PlayQueue(object):
 
                 added_song_info = song["title"] + " [" + str(
                     datetime.timedelta(seconds=round(song["duration"]))) + "]\n"
-
-                if len(message)+len(added_song_info) > 1900:
-                    await ctx.send("Messages.added_to_queue_message"+message+"`")
-                    message = " `"
-                else:
-                    message += added_song_info
-            await ctx.send("Messages.added_to_queue_message " + message)
+                if len(embed_message.fields) + len(embed_message) > 6000:
+                    await ctx.send(embed =embed_message)
+                    embed_message = embeds.Embed(title="Messages.added_to_queue_message", color=0x00ff00)
+                embed_message.add_field(name='\u200b', value="`" + added_song_info + "`", inline=False)
+            await ctx.send(embed=embed_message)
+        #            await ctx.send(embed=embed_message)
+        #     if len(message) + len(added_song_info) > 1900:
+        #         await ctx.send("Messages.added_to_queue_message" + message + "`")
+        #         message = " `"
+        #     else:
+        #         message += added_song_info
+        # await ctx.send("Messages.added_to_queue_message " + message)
 
         else:
-            try:
-                results = self.ytdl.extract_info(f"ytsearch1:{what}", download=False)
-            except:
-                await ctx.send("Messages.search_error")
-                return
+
+            results = await loop.run_in_executor(
+                None, functools.partial(self.ytdl.extract_info, f"ytsearch1:{what}", download=False))
+
+            # await ctx.send("Messages.search_error")
+            # return
             try:
                 song = results["entries"][0]
-            except:
-                raise PlayException()
-
+            except Exception:
+                raise PlayException("No result")
+                return
             self.queue.put(song)
 
             print("Added to queue: " + song["title"])
 
-            embed_message.add_field( value="`" + song["title"] + " [" + str(
+            embed_message.add_field(name='\u200b', value="`" + song["title"] + " [" + str(
                 datetime.timedelta(seconds=round(song["duration"]))) + "]`")
-            await ctx.send(embed = embed_message)
+            await ctx.send(embed=embed_message)
 
         pass
+
+
 
     def get(self, _block: bool, _timeout: int):
         try:
@@ -315,7 +342,7 @@ class PlayQueue(object):
 class MusicPlayer(object):
     @tasks.loop(seconds=5, count=None)
     async def play_next(self):
-        if not self.voice_client:
+        if not self.voice_client or not self.voice_client.channel:
             await YoutubeMusic._join()
             self.destroy = False
         if not self.voice_client.is_playing() and not self.voice_client.is_paused() and \
@@ -329,6 +356,8 @@ class MusicPlayer(object):
 
     @tasks.loop(seconds=5, count=36)
     async def anything_in_queue(self):
+        if self.voice_client.is_playing():
+            self.anything_in_queue.stop()
         if not self.queue.empty():
             self.next()
             self.anything_in_queue.stop()
@@ -355,10 +384,12 @@ class MusicPlayer(object):
         self.play_next.stop()
 
     async def play(self, ctx, what: str):
-        try:
+        if self.anything_in_queue.is_running():
             self.anything_in_queue.stop()
+        try:
+
             await self.queue.add(ctx, what)
-            self.anything_in_queue.start()
+
         except PlayException:
             await ctx.send("play_message_error")
         # print("Added to queue: " + str(what))
@@ -379,12 +410,18 @@ class MusicPlayer(object):
             self.destroy = True
             print("chyba")
             return
-        self.now_playing = song
 
-        self.voice_client.play(FFmpegPCMAudio(song["formats"][0]["url"], **FFMPEG_OPTIONS)
+        if not self.voice_client.is_connected():
+            self.anything_in_queue.stop()
+
+            return
+        playable = FFmpegPCMAudio(song["formats"][0]["url"], **FFMPEG_OPTIONS)
+        print(str(playable))
+        self.voice_client.play(playable)
+
                                # , after=lambda e: self.next()
-                               )
 
+        self.now_playing = song
         if self.loop is True:
             self.queue.put(song)
         pass

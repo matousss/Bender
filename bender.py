@@ -1,25 +1,11 @@
 # bender.py
-import asyncio
-import functools
-import os
-import re
-import sys
 import time
-import typing
 
 import discord
-import youtube_dl
 from discord.ext import commands
 from dotenv import load_dotenv
-import json
-import asyncio
-from async_timeout import timeout
 import os.path
-from os import path
 from discord.ext.commands import CommandNotFound
-from threading import Thread
-from googletrans import Translator
-import pafy
 from modules.messages import MessagesTexts as Messages
 import modules.audio
 import modules.shits
