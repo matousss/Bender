@@ -1,38 +1,23 @@
 import sys
+import types
 import typing
-from .messages import MessagesHandler
-from .messages import MessagesTexts
 from discord.ext import commands
 from googletrans import Translator
-from discord import utils as dutils
-
-
-class BenderUtils():
-    def getChannel(self, ctx, channel: str):
-        if channel.startswith("<#"):
-            return dutils.get(ctx.guild.channels, id=int(channel[2:].replace(">", "")))
-        elif channel.isnumeric():
-            return dutils.get(ctx.guild.channels, id=int(channel))
-        else:
-            return dutils.get(ctx.guild.channels, name=channel)
-
-    pass
-butils = BenderUtils()
 
 class Utils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         print("Initialized modules.utils.Utils")
 
-    @commands.command(name="info")
-    async def _info(self, ctx):
-        await MessagesHandler.sendMessage(self,ctx, MessagesTexts.info)
-        pass
+    # @commands.command(name="info")
+    # async def _info(self, ctx):
+    #     await MessagesHandler.sendMessage(self,ctx, MessagesTexts.info)
+    #     pass
 
     @commands.command(name="ping")
     async def ping(self, ctx):
         # print("<INFO> ping: "+str(float(bot.latency)*1000).split(".")[0] +"ms")
-        await ctx.send("Ping: `" + str(float(self.ctx.bot.latency) * 1000).split(".")[0] + "ms`")
+        await ctx.send("Ping: `" + str(float(ctx.bot.latency) * 1000).split(".")[0] + "ms`")
 
     @commands.command(name="suicide")
     @commands.is_owner()
@@ -59,95 +44,6 @@ class Moderation(commands.Cog):
         print("Initialized modules.utils.Moderation")
         pass
 
-    # @commands.command(name="moveall", aliases=["mall"])
-    # async def _moveall(ctx, *channel: str):
-    #     channel = str(" ".join(channel))
-    #     destination = None
-    #
-    #     if channel == "":
-    #         await ctx.send(messages.moveall_error)
-    #         return
-    #     if channel and channel is not None:
-    #         if channel.startswith("<"):
-    #             destination = discord.utils.get(ctx.guild.channels, id=int(channel[2:].replace(">", "")))
-    #         elif channel.isnumeric():
-    #             destination = discord.utils.get(ctx.guild.channels, id=int(channel))
-    #
-    #         else:
-    #             destination = discord.utils.get(ctx.guild.channels, name=channel)
-    #         if destination is None:
-    #             await ctx.send(messages.moveall_error_b + " `" + channel + "`")
-    #             return
-    #
-    #
-    #     elif False:
-    #         print("1")
-    #         if ctx.author.voice and ctx.author.voice.channel:
-    #             print("3")
-    #             author = discord.utils.get(ctx.guild.members, name=str(ctx.author))
-    #             await ctx.send("Join channel and take everyone from current channel with you!")
-    #             try:
-    #                 print("4")
-    #                 async with timeout(20):
-    #                     print("5")
-    #                     while True:
-    #                         print("5")
-    #                         print(author.voice.channel.id)
-    #                         print(ctx.author.voice.channel.id)
-    #                         if ctx.author.voice.channel.id != author.voice.channel.id:
-    #                             destination = ctx.author.voice.channel
-    #                             print("0")
-    #
-    #             except asyncio.TimeoutError:
-    #                 await ctx.send("Time out!")
-    #                 return
-    #         else:
-    #             await ctx.send("User isn't in channel or no channel specified!")
-    #             return
-    #
-    #     for mem in ctx.author.voice.channel.members:
-    #
-    #         if mem != ctx.author:
-    #             await ctx.author.move_to(destination)
-    #             await mem.move_to(destination)
-    #             print("<INFO> Moved user: " + str(mem) + " to " + str(destination))
-    #     await ctx.author.move_to(destination)
-    #     print("<INFO> Moved user: " + str(ctx.author) + " to " + str(destination))
-    #     await ctx.send(messages.moveall + " `" + str(destination) + "`")
-    #     pass
-
-    # @commands.command(name="kickothers", aliases=["kothers"])
-    # async def _kickothers(ctx):
-    #     if ctx.author.voice and ctx.author.voice.channel:
-    #         if len(ctx.author.voice.channel.members == 1):
-    #             ctx.send(messages.kothers_error)
-    #             return
-    #         for mem in ctx.author.voice.channel.members:
-    #             if mem != ctx.author:
-    #                 await ctx.author.move_to(None)
-    #                 await mem.move_to(None)
-    #                 print("<INFO> Kicked user: " + str(mem) + " from " + str(ctx.author.voice.channel))
-    #     else:
-    #         await ctx.send(messages.kick_error)
-    #     await ctx.send(messages.kothers)
-    #     pass
-
-    # @commands.command(name="kickall", aliases=["kall"])
-    # async def _kickall(ctx):
-    #     channel = ctx.author.voice.channel
-    #     if ctx.author.voice and ctx.author.voice.channel:
-    #         for mem in ctx.author.voice.channel.members:
-    #             if mem != ctx.author:
-    #                 await ctx.author.move_to(None)
-    #                 await mem.move_to(None)
-    #                 print("<INFO> Kicked user: " + str(mem) + " from " + str(ctx.author.voice.channel))
-    #     else:
-    #         await ctx.send(messages.kick_error)
-    #     await ctx.author.move_to(None)
-    #     print("<INFO> Kicked user: " + str(ctx.author) + " from " + str(channel))
-    #     await ctx.send(messages.kall + " `" + str(ctx.author.voice.channel) + "`")
-    #     pass
-
     @commands.command(name="kick", aliases=["k"])
     async def _kick(self, ctx, option: str = None, channel: typing.Optional[str] = None, *,
                     users: typing.Optional[str] = ""):
@@ -166,7 +62,7 @@ class Moderation(commands.Cog):
             await ctx.send("Syntax error")
             return
         if channel is not None:
-            destination = butils.getChannel(ctx ,channel)
+            destination = butils.getChannel(ctx, channel)
 
         if ctx.author.voice and ctx.author.voice.channel and channel is None:
             destination = ctx.author.voice.channel

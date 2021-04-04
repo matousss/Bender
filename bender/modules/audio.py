@@ -2,12 +2,9 @@ import _queue
 import asyncio
 import datetime
 import functools
-import threading
 import typing
 from queue import Queue
 
-import promise
-import asyncbg
 import youtube_dl
 
 from discord import FFmpegPCMAudio
@@ -16,10 +13,10 @@ from discord import utils
 from discord import embeds
 from discord.ext import commands
 from discord.ext import tasks
-from modules.messages import MessagesTexts as Messages
-from modules.utils import BenderUtils
 
-butils = BenderUtils()
+from bender.utils import utils as butils
+
+
 
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
@@ -68,11 +65,11 @@ class YoutubeMusic(commands.Cog):
 
         print("Initialized modules.audio.YoutubeMusic")
 
-    @commands.command(name="join", aliases=["j", "summon"], description=Messages.join_des, brief=Messages.join_brief)
+    @commands.command(name="join", aliases=["j", "summon"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def _join(self, ctx, channel: typing.Optional[str] = None):
         if channel is not None:
-            destination = butils.getChannel(ctx, channel)
+            destination = butils.get_channel(ctx, channel)
             # if channel.startswith("<#"):
             #     destination = utils.get(ctx.guild.channels, id=int(channel[2:].replace(">", "")))
             # elif channel.isnumeric():
@@ -82,24 +79,24 @@ class YoutubeMusic(commands.Cog):
         elif ctx.author.voice and ctx.author.voice.channel:
             destination = ctx.author.voice.channel
         else:
-            await ctx.send(Messages.join_error)
+            await ctx.send("Messages.join_error")
             return
 
         if ctx.voice_client and ctx.voice_client.is_connected() and channel is None:
             if ctx.author.voice.channel.guild == ctx.guild and ctx.voice_client.channel == ctx.author.voice.channel:
-                await ctx.send(Messages.join_error_b)
+                await ctx.send("Messages.join_error_b")
             else:
                 try:
                     await ctx.voice_client.move_to(destination)
-                    await ctx.send(Messages.join + destination.name)
+                    await ctx.send("Messages.join" + destination.name)
 
                 except:
-                    await ctx.send(Messages.join_error)
+                    await ctx.send("Messages.join_error")
                 return
 
         try:
             await destination.connect()
-            await ctx.send(Messages.join + destination.name)
+            await ctx.send("Messages.join" + destination.name)
             print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
             self.music_players.add(str(ctx.guild.id), MusicPlayer(str(ctx.guild.id), ctx.voice_client))
 
@@ -108,7 +105,7 @@ class YoutubeMusic(commands.Cog):
                 print("<ERROR> Error occurred while joining channel: no channel specified or user is not in channel")
             else:
                 print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
-            await ctx.send(Messages.join_error)
+            await ctx.send("Messages.join_error")
         pass
 
     @commands.command(name="leave", aliases=["dis", "disconnect", "l"])
@@ -116,12 +113,12 @@ class YoutubeMusic(commands.Cog):
     async def _leave(self, ctx):
         channel = utils.get(self.bot.voice_clients, guild=ctx.guild)
         if channel is None:
-            await ctx.send(Messages.leave_error)
+            await ctx.send("Messages.leave_error")
             return
         if str(ctx.guild.id) in self.music_players:
             self.music_players.removekey(str(ctx.guild.id))
         await channel.disconnect()
-        await ctx.send(Messages.leave)
+        await ctx.send("Messages.leave")
 
         pass
 
@@ -136,14 +133,14 @@ class YoutubeMusic(commands.Cog):
 
                 try:
                     await destination.connect()
-                    await ctx.send(Messages.join + destination.name)
+                    await ctx.send("Messages.join" + destination.name)
                     print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
 
                 except:
                     print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
-                    await ctx.send(Messages.join_error)
+                    await ctx.send("Messages.join_error")
             else:
-                await ctx.send(Messages.join_error)
+                await ctx.send("Messages.join_error")
                 return
         # with youtube_dl.YoutubeDL(YTDL_OPTIONS) as ytdl:
         #
@@ -215,14 +212,14 @@ class SoundBoard(commands.Cog):
 
                     try:
                         await destination.connect()
-                        await ctx.send(Messages.join + destination.name)
+                        await ctx.send("Messages.join" + destination.name)
                         print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
 
                     except:
                         print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
-                        await ctx.send(Messages.join_error)
+                        await ctx.send("Messages.join_error")
                 else:
-                    await ctx.send(Messages.join_error)
+                    await ctx.send("Messages.join_error")
                     return
         elif ctx.voice_client.is_playing is True:
             await ctx.send("Messages.busy")
@@ -239,8 +236,9 @@ class SoundBoard(commands.Cog):
 
 
 class PlayException(Exception):
-    def __init__(self, *, description=""):
-        self.description = description
+    def __init__(self, message=""):
+        self.message = message
+        super.__init__(message)
         pass
 
     pass
@@ -278,11 +276,15 @@ class PlayQueue(object):
             # await ctx.send(embed=embed_message)
 
         elif what.startswith("https://www.youtube.com/playlist?list="):
-            songs = await loop.run_in_executor(
-                None, functools.partial(self.ytdl.extract_info,what, download=False)
+            result = await loop.run_in_executor(
+                None, functools.partial(self.ytdl.extract_info, what, download=False)
             )
-            songs = songs["entries"]
+            print(result)
+
+            songs = result["entries"]
+            print(songs)
             message = " `"
+            print("tf")
             for song in songs:
                 self.queue.put(song)
                 print("Added to queue: " + song["title"])
@@ -313,7 +315,7 @@ class PlayQueue(object):
                 song = results["entries"][0]
             except Exception:
                 raise PlayException("No result")
-                return
+
             self.queue.put(song)
 
             print("Added to queue: " + song["title"])
@@ -403,7 +405,7 @@ class MusicPlayer(object):
     def next(self):
 
         try:
-            print("Is queue empty:" + str(self.queue.empty()))
+            print("Is queue empty: " + str(self.queue.empty()))
             song = self.queue.get(False, 1)
 
         except _queue.Empty:
@@ -417,13 +419,13 @@ class MusicPlayer(object):
             return
         playable = FFmpegPCMAudio(song["formats"][0]["url"], **FFMPEG_OPTIONS)
         print(str(playable))
-        self.voice_client.play(playable)
+        self.voice_client.play(playable, after= lambda e: self.next())
 
                                # , after=lambda e: self.next()
 
         self.now_playing = song
         if self.loop is True:
-            self.queue.put(song)
+            self.queue.add(song)
         pass
 
     async def pause(self):
@@ -433,16 +435,13 @@ class MusicPlayer(object):
 
     async def skip(self):
         self.voice_client.stop()
-        self.next()
+        #self.next()
         pass
 
     pass
 
 
 class Players(dict):
-    def __init__(self):
-        self = dict
-        pass
 
     def add(self, key, value: MusicPlayer):
         self[key] = value
