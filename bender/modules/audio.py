@@ -2,9 +2,12 @@ import _queue
 import asyncio
 import datetime
 import functools
+import threading
 import typing
 from queue import Queue
 
+import promise
+import asyncbg
 import youtube_dl
 
 from discord import FFmpegPCMAudio
@@ -14,12 +17,11 @@ from discord import embeds
 from discord.ext import commands
 from discord.ext import tasks
 
-from bender.utils import utils as butils
-
+import bender.utils.utils as butils
 
 
 YTDL_OPTIONS = {
-    'format': 'bestaudio/best',
+    'format': 'bestaudio',
     'extractaudio': True,
     'audioformat': 'mp3',
     'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
@@ -69,7 +71,7 @@ class YoutubeMusic(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def _join(self, ctx, channel: typing.Optional[str] = None):
         if channel is not None:
-            destination = butils.get_channel(ctx, channel)
+            destination = butils.getChannel(ctx, channel)
             # if channel.startswith("<#"):
             #     destination = utils.get(ctx.guild.channels, id=int(channel[2:].replace(">", "")))
             # elif channel.isnumeric():
@@ -212,7 +214,7 @@ class SoundBoard(commands.Cog):
 
                     try:
                         await destination.connect()
-                        await ctx.send("Messages.join" + destination.name)
+                        await ctx.send("Messages.join + destination.name")
                         print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
 
                     except:
@@ -236,9 +238,10 @@ class SoundBoard(commands.Cog):
 
 
 class PlayException(Exception):
-    def __init__(self, message=""):
+    def __init__(self, salary, message =""):
+        self.salary = salary
         self.message = message
-        super.__init__(message)
+        super.__init__(self.message)
         pass
 
     pass
@@ -315,7 +318,7 @@ class PlayQueue(object):
                 song = results["entries"][0]
             except Exception:
                 raise PlayException("No result")
-
+                return
             self.queue.put(song)
 
             print("Added to queue: " + song["title"])
@@ -425,7 +428,7 @@ class MusicPlayer(object):
 
         self.now_playing = song
         if self.loop is True:
-            self.queue.add(song)
+            self.queue.put(song)
         pass
 
     async def pause(self):
@@ -442,6 +445,9 @@ class MusicPlayer(object):
 
 
 class Players(dict):
+    def __init__(self):
+        self = dict
+        pass
 
     def add(self, key, value: MusicPlayer):
         self[key] = value

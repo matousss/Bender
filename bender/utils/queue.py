@@ -1,9 +1,12 @@
+from collections import deque
+
+
 class Queue(object):
     def __init__(self, size: int = -1):
         if size != -1 and size < 1:
             raise ValueError("Size parameter must be -1 for unlimited or greater than 1")
 
-        self._list = list()
+        self._list = deque([])
         self.QUEUE_SIZE = size
 
         pass
@@ -19,11 +22,11 @@ class Queue(object):
         self._list.insert(index, value)
         pass
 
-    def pop(self, index: int = 0):
+    def pop(self):
         if len(self._list) == 0:
             raise self.QueueEmpty("Queue is empty")
 
-        return self._list.pop(index)
+        return self._list.pop()
 
     def get(self, index = 0):
         try:
@@ -40,6 +43,9 @@ class Queue(object):
 
     def max_size(self) -> int:
         return self.QUEUE_SIZE
+
+    def empty(self) -> bool:
+        return (len(self._list) == 0)
 
     def __str__(self):
         return str(self._list)
@@ -61,17 +67,3 @@ class Queue(object):
             pass
 
 
-q = Queue()
-q.append("jo")
-q.append("ne")
-q.append("traktor")
-print(str(q))
-print(q.remove(1))
-print(str(q))
-
-q.insert(1, "auto")
-print(str(q))
-print("sdads "+q.get(-2))
-print(q.pop())
-print(str(q))
-print(len(q))

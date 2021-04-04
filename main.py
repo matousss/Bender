@@ -7,13 +7,14 @@ from dotenv import load_dotenv
 import os.path
 from discord.ext.commands import CommandNotFound
 
+import bender
 from bender.modules import *
 
 
 load_dotenv()
 TOKEN = os.environ.get("DISCORD_TOKEN")
 PREFIX = str(os.environ.get("PREFIX"))
-VERSION = os.environ.get("VERSION")
+VERSION = bender.__version__
 
 
 
