@@ -1,5 +1,7 @@
 from collections import deque
 
+__all__ = 'Queue'
+
 
 class Queue(object):
     def __init__(self, size: int = -1):
@@ -28,7 +30,7 @@ class Queue(object):
 
         return self._list.pop()
 
-    def get(self, index = 0):
+    def get(self, index=0):
         try:
             return self._list[index]
         except Exception as e:
@@ -49,6 +51,7 @@ class Queue(object):
 
     def __str__(self):
         return str(self._list)
+
     pass
 
     def __len__(self):
@@ -65,5 +68,3 @@ class Queue(object):
             self.message = message
             super().__init__(message)
             pass
-
-

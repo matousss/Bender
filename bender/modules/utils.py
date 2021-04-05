@@ -1,8 +1,10 @@
+import asyncio
 import sys
 import types
 import typing
 from discord.ext import commands
 from googletrans import Translator
+import bender.utils as butils
 
 class Utils(commands.Cog):
     def __init__(self, bot):
@@ -22,7 +24,8 @@ class Utils(commands.Cog):
     @commands.command(name="suicide")
     @commands.is_owner()
     async def _suicide(self, ctx):
-        sys.exit("Killed by Owner!")
+        #sys.exit("Killed by Owner!")
+        asyncio.get_event_loop().stop()
         pass
 
     pass
