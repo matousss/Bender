@@ -5,13 +5,11 @@ import functools
 import typing
 from queue import Queue
 
-
 import youtube_dl
-
 from discord import FFmpegPCMAudio
 from discord import VoiceClient
-from discord import utils
 from discord import embeds
+from discord import utils
 from discord.ext import commands
 from discord.ext import tasks
 
@@ -275,12 +273,12 @@ class PlayQueue(object):
             song = await loop.run_in_executor(
                 None, functools.partial(self.ytdl.extract_info, what, download=False)
             )
-            # self.queue.put(song)
+            self.queue.put(song)
             print("Added to queue: " + song["title"])
 
             embed_message.add_field(name='\u200b', value="`" + song["title"] + " [" + str(
                 datetime.timedelta(seconds=round(song["duration"]))) + "]`")
-            # await ctx.send(embed=embed_message)
+            await ctx.send(embed=embed_message)
 
         elif what.startswith("https://www.youtube.com/playlist?list="):
             result = await loop.run_in_executor(
@@ -327,7 +325,7 @@ class PlayQueue(object):
 
             attempts = 0
             while attempts < RETRY_TIMES:
-                song = await search(what, ytdl= self.ytdl)
+                song = await search(what, ytdl=self.ytdl)
                 print(f"Attemp: {attempts}")
                 if song is not None:
                     break
@@ -373,33 +371,39 @@ class AudioSource(FFmpegPCMAudio):
 
 
 class MusicPlayer(object):
+    # @tasks.loop(seconds=5, count=None)
+    # async def play_next(self):
+    #     if not self.voice_client or not self.voice_client.channel:
+    #         await YoutubeMusic._join()
+    #         self.destroy = False
+    #     if not self.voice_client.is_playing() and not self.voice_client.is_paused() and \
+    #             not self.anything_in_queue.is_running():
+    #         self.anything_in_queue.start()
+    #     pass
+    #
+    # @play_next.after_loop
+    # async def after_play_next(self):
+    #     self.anything_in_queue.stop()
+    #
+    # @tasks.loop(seconds=5, count=36)
+    # async def anything_in_queue(self):
+    #     if self.voice_client.is_playing():
+    #         self.anything_in_queue.stop()
+    #     if not self.queue.empty():
+    #         self.next()
+    #         self.anything_in_queue.stop()
+    #     pass
+    #
+    # @anything_in_queue.after_loop
+    # async def after_anything_in_queue(self):
+    #     if not self.voice_client.is_playing():
+    #         self.destroy = True
+    #     pass
     @tasks.loop(seconds=5, count=None)
-    async def play_next(self):
-        if not self.voice_client or not self.voice_client.channel:
-            await YoutubeMusic._join()
-            self.destroy = False
-        if not self.voice_client.is_playing() and not self.voice_client.is_paused() and \
-                not self.anything_in_queue.is_running():
-            self.anything_in_queue.start()
-        pass
+    async def check_queue(self):
+        if not self.queue.queue.empty() and not self.voice_client.is_playing():
+            await self.next()
 
-    @play_next.after_loop
-    async def after_play_next(self):
-        self.anything_in_queue.stop()
-
-    @tasks.loop(seconds=5, count=36)
-    async def anything_in_queue(self):
-        if self.voice_client.is_playing():
-            self.anything_in_queue.stop()
-        if not self.queue.empty():
-            self.next()
-            self.anything_in_queue.stop()
-        pass
-
-    @anything_in_queue.after_loop
-    async def after_anything_in_queue(self):
-        if not self.voice_client.is_playing():
-            self.destroy = True
         pass
 
     def __init__(self, key: str, voice_client: VoiceClient):
@@ -409,22 +413,26 @@ class MusicPlayer(object):
         self.loop = False
         self.key = key
         self.destroy = False
-        self.play_next.start()
-
+        # self.play_next.start()
+        self.check_queue.start()
         pass
 
-    def __del__(self):
-        self.play_next.stop()
+    # def __del__(self):
+    #     self.play_next.stop()
+
+
 
     async def play(self, ctx, what: str):
-        if self.anything_in_queue.is_running():
-            self.anything_in_queue.stop()
+        # if self.anything_in_queue.is_running():
+        #     self.anything_in_queue.stop()
         try:
 
             await self.queue.add(ctx, what)
 
         except PlayQueue.NoResult:
-            await ctx.send("play_message_error")
+            await ctx.send("not_found_error")
+            return
+
         # print("Added to queue: " + str(what))
         # print(str(self.queue))
         # if not self.voice_client.is_playing():
@@ -433,8 +441,11 @@ class MusicPlayer(object):
         # if not self.play_next.is_running():
         #     self.play_next.start()
 
-    def next(self):
+        pass
 
+    async def next(self):
+
+        self.queue.queue.empty()
         try:
             print("Is queue empty: " + str(self.queue.empty()))
             song = self.queue.get(False, 1)
@@ -444,10 +455,10 @@ class MusicPlayer(object):
             print("chyba")
             return
 
-        if not self.voice_client.is_connected():
-            self.anything_in_queue.stop()
-
-            return
+        # if not self.voice_client.is_connected():
+        #     self.anything_in_queue.stop()
+        #
+        #     return
 
         playable = FFmpegPCMAudio(song["formats"][0]["url"], **FFMPEG_OPTIONS)
         print(str(playable))
@@ -457,13 +468,47 @@ class MusicPlayer(object):
 
         self.now_playing = song
 
+        pass
+
     async def pause(self):
+        if self.voice_client.is_paused():
+            raise self.AlreadyPaused("Player is already paused")
         await self.voice_client.pause()
 
         pass
 
+    async def resume(self):
+        if not self.voice_client.is_paused():
+            raise self.NotPaused("Player isn't paused")
+        await self.voice_client.resume()
+
+        pass
+
     async def skip(self):
+        if not self.voice_client.is_playing():
+            raise self.NotPlaying()
         self.voice_client.stop()
+        pass
+
+    class NotPlaying(Exception):
+        def __init__(self, message: str = ""):
+            self.message = message
+            super().__init__(message)
+
+        pass
+
+    class AlreadyPaused(Exception):
+        def __init__(self, message: str = ""):
+            self.message = message
+            super().__init__(message)
+
+        pass
+
+    class NotPaused(Exception):
+        def __init__(self, message: str = ""):
+            self.message = message
+            super().__init__(message)
+
         pass
 
     pass
