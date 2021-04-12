@@ -1,6 +1,14 @@
+from asyncio.queues import Queue
 from collections import deque
 
-__all__ = 'Queue'
+__all__ = ['IndexAsyncQueue']
+
+
+class IndexAsyncQueue(Queue):
+    def get_by_index(self, index: int):
+        return self._queue[index]
+
+    pass
 
 
 class Queue(object):

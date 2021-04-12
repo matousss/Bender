@@ -10,6 +10,8 @@ from discord.ext.commands import CommandNotFound
 import bender
 from bender.modules import *
 
+for cog in bender.modules.__cogs__:
+    print(cog)
 
 load_dotenv()
 TOKEN = os.environ.get("DISCORD_TOKEN")
@@ -48,13 +50,14 @@ async def on_command_error(ctx, error):
 
 
 def init_modules():
-    bot.add_cog(audio.YoutubeMusic(bot))
-    #bot.add_cog(bender.modules.audio.SoundBoard(bot))
-    #bot.add_cog(modules.utils.Greetings(bot))
-    bot.add_cog(utils.Utils(bot))
-    bot.add_cog(utils.Moderation(bot))
-    bot.add_cog(shits.Shits(bot))
-
+    # bot.add_cog(audio.YoutubeMusic(bot))
+    # #bot.add_cog(bender.modules.audio.SoundBoard(bot))
+    # #bot.add_cog(modules.utils.Greetings(bot))
+    # bot.add_cog(utils.Utils(bot))
+    # bot.add_cog(utils.Moderation(bot))
+    # bot.add_cog(shits.Shits(bot))
+    for cog in bender.modules.__cogs__:
+        bot.add_cog(cog(bot))
     pass
 
 
