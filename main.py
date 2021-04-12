@@ -1,30 +1,41 @@
 # utils.py
+import os.path
+import sys
 import time
 
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
-import os.path
 from discord.ext.commands import CommandNotFound
+from dotenv import load_dotenv
 
 import bender
-from bender.modules import *
-
-for cog in bender.modules.__cogs__:
-    print(cog)
+from bender.modules.audio.cogs import VoiceClientCommands, YoutubeMusic
+from bender.global_settings import DEBUG
 
 load_dotenv()
 TOKEN = os.environ.get("DISCORD_TOKEN")
 PREFIX = str(os.environ.get("PREFIX"))
 VERSION = bender.__version__
+prefixes = {
+    'default': ',',
+    '767788412446048347': 'fuck '
+}
 
 
+# todo option to select any prefix per server
+async def prefix(bot, message: discord.Message):
+    try:
+        prefix = prefixes[str(message.guild.id)]
+    except KeyError:
+        prefix = prefixes['default']
+
+    print(str(message.guild.id) + " " + prefix)
+    return prefix
 
 
 intents = discord.Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix=str(PREFIX), intents=intents)
-
+bot = commands.Bot(command_prefix=prefix, intents=intents, owner_id=494216665664323585)
 
 
 @bot.event
@@ -40,11 +51,11 @@ async def on_command_error(ctx, error):
     if isinstance(error, discord.ext.commands.errors.NotOwner):
         await ctx.send("Messages.error_not_owner " + (ctx.author.mention) + "!")
     if isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
-        #await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
-        await ctx.send("Messages.on_cooldown"+" `" + str(int(error.cooldown.per)) + "s`!")
+        # await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
+        await ctx.send("Messages.on_cooldown" + " `" + str(int(error.cooldown.per)) + "s`!")
         return
     if isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
-        await ctx.send("Messages.missings_param")
+        await ctx.send("Messages.missing_parameters")
         return
     raise error
 
@@ -56,15 +67,15 @@ def init_modules():
     # bot.add_cog(utils.Utils(bot))
     # bot.add_cog(utils.Moderation(bot))
     # bot.add_cog(shits.Shits(bot))
-    for cog in bender.modules.__cogs__:
-        bot.add_cog(cog(bot))
+    bot.add_cog(VoiceClientCommands(bot))
+    bot.add_cog(YoutubeMusic(bot))
     pass
 
 
 @bot.event
 async def on_ready():
-    print("Starting...\n\n")
-    init_modules()
+
+
     print("\n\n" + f'{bot.user} has connected to Discord!\n\n')
 
     print("Connected to servers:")
@@ -80,7 +91,13 @@ async def on_guild_join(guild):
     if guild.system_channel:
         await guild.system_channel.send("I am Bender please insert girder")
 
+#todo run options
+if __name__ == '__main__':
+    for arg in sys.argv:
+        if arg == "-thomashadneverseensuchabullshitbefore":
+            DEBUG = True
+    print("Starting...\n\n")
+    init_modules()
+    bot.run(TOKEN)
 
-bot.run(TOKEN)
 
-print("Bender Stopped!")

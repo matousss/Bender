@@ -7,7 +7,7 @@ __all__=['']
 
 
 
-def get_channel(self, ctx, channel: str):
+def get_channel(ctx, channel: str):
     if channel.startswith("<#"):
         return dutils.get(ctx.guild.channels, id=int(channel[2:].replace(">", "")))
     elif channel.isnumeric():

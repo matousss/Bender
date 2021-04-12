@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import functools
-from asyncio import AbstractEventLoop, get_running_loop, QueueFull
+from asyncio import AbstractEventLoop, get_running_loop, QueueFull, QueueEmpty
 from concurrent.futures import Executor
 
-import discord
+from discord import VoiceClient
 from youtube_dl import YoutubeDL
 
 from bender.modules.audio import settings
@@ -16,48 +16,122 @@ __all__ = ['MusicPlayer', 'MusicSearcher']
 
 
 class MusicPlayer(object):
-    def __init__(self, voice_client: discord.voice_client, queue: Queue):
-        self._voice_client = voice_client
+    """
+    Object representing music player
+
+    Attributes
+    -----------
+    voice_client: :class: discord.voice_client
+        Voice client of bot in chosen guild
+
+    _queue: :class: asyncio.queues.Queue
+        Queue for :class: Song object which will be played
+
+    now_playing: :class: Song
+        Holds now playing song
+    """
+
+    def __init__(self, voice_client: VoiceClient, queue: Queue = Queue()):
+        if not isinstance(voice_client, VoiceClient):
+            raise ValueError(f"voice_client can't be {voice_client}")
+        if not isinstance(queue, Queue):
+            raise ValueError(f"queue can't be {queue}")
+        self.voice_client = voice_client
         self._queue = queue
         self.now_playing: Song = None
         pass
 
     def add_song(self, item: Song):
         """Add song to player queue
-        Can raise asyncio.QueueFull"""
+        Raises
+        -------
+        QueueEmpty
+            Queue of player is full"""
         self._queue.put_nowait(item)
 
     def add_songs(self, songs: [Song]):
         """Add all songs from array to player queue
-        Can raise asyncio.QueueFull"""
+
+        Raises
+        -------
+        QueueEmpty
+            Queue of player is empty
+        """
         for song in songs:
-            try:
-                self.add_song(song)
-            except QueueFull as e:
-                raise e
+            self.add_song(song)
 
     def get_song(self):
-        """Return and remove song from player queue"""
+        """Return and remove song from player queue
+        Raises
+        -------
+        QueueEmpty
+            Queue of player is empty
+        """
         return self._queue.get_nowait()
 
     def get_now_playing(self) -> Song:
-        """Returns now_playing or raise NotPlaying"""
+        """Returns now_playing
+
+        Returns
+        --------
+        :class: Song
+            Object of now playing audio
+
+        Raises
+        -------
+        QueueEmpty
+            Queue of player is empty
+        """
         if self.now_playing:
             return self.now_playing
         else:
             raise NotPlaying
 
-    def get_next(self):
-        """Get song from queue and prepare song after"""
-        next_song = self._queue.get_nowait()
-        print("čabraka" + str(self._queue.get_by_index(0)))
+    def get_next(self) -> Song:
+        """
+        Get song from queue and prepare song after
+
+        Returns
+        --------
+        :class: Song
+            Next song in queue
+        """
+        next_song = self.get_song()
+        self._queue.get_by_index(0).prepare_to_go()
         return next_song
 
-    pass
+    async def get_next_async(self):
+        """
+        Get song from queue and prepare song after
+        Asyncio friendly
+
+        Returns
+        --------
+        :class: Song
+            Next song in queue
+        """
+        next_song = self.get_song()
+        await self._queue.get_by_index(0).prepare_to_go_async()
+        return next_song
+
+    async def play(self, song: Song):
+        if not self.voice_client:
+            raise ValueError("voice_client can't be Null")
+        elif not self.voice_client.is_connected():
+            raise VoiceClientError("Not connected")
+        elif self.voice_client.is_playing():
+            raise AlreadyPlaying
+
+        def play_next():
+            self.voice_client.play(Song.source, after = play_next)
+            self.now_playing = song
+
+    async def play_next(self):
+        await self.play(self.get_next().source)
 
 
 class NotPlaying(Exception):
-    """Raised by MusicPlayer.get_now_playing() when no song playing"""
+    """Raised by :class:`MusicPlayer.get_now_playing()` when no song playing"""
     pass
 
 
@@ -75,6 +149,17 @@ class AlreadyPlaying(Exception):
     """Raised by MusicPlayer.play() when audio is already playing"""
     pass
 
+
+class VoiceClientError(Exception):
+    """Raised by MusicPlayer on error with voice_client"""
+
+    def __init__(self, desc: any = None):
+        self.desc = desc
+        super().__init__(self, desc)
+
+class NoSongToPlay(Exception):
+    """Raised by MusicPlayer.play"""
+    pass
 
 class NoResult(Exception):
     """Raised by MusicSearcher.search_song() when no result"""
@@ -154,19 +239,3 @@ class MusicSearcher:
 
     pass
 
-
-async def this():
-    MusicSearcher.search_song("https://www.youtube.com/playlist?list=PLfyTELTjgPDmJppx0cnnP2N0n-y0xV7x0")
-    MusicSearcher.search_song("boom boom boom")
-    MusicSearcher.search_song("llyiQ4I-mcQ")
-    # MusicSearcher.search_song("https://www.pornhub.com/view_video.php?viewkey=ph605801aab1ef2")
-    mp = MusicPlayer(None, Queue())
-    MusicSearcher.search_song()
-    mp.add_song(MusicSearcher.search_song("llyiQ4I-mcQ"))
-    mp.add_song(MusicSearcher.search_song("https://www.youtube.com/watch?v=dQw4w9WgXcQ&ab_channel=RickAstleyVEVO"))
-    print(mp.get_next())
-
-
-if __name__ == '__main__':
-    print("dnmasjdjnij")
-    asyncio.run(this())
