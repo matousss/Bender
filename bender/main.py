@@ -1,4 +1,5 @@
 # utils.py
+import logging
 import os.path
 import sys
 import time
@@ -11,18 +12,19 @@ from dotenv import load_dotenv
 import bender
 from bender.modules.audio.cogs import VoiceClientCommands, YoutubeMusic
 from bender.global_settings import DEBUG
-
+#logging.basicConfig(filename="fuck.log", level=logging.DEBUG )
 load_dotenv()
 TOKEN = os.environ.get("DISCORD_TOKEN")
 PREFIX = str(os.environ.get("PREFIX"))
 VERSION = bender.__version__
 prefixes = {
     'default': ',',
-    '767788412446048347': 'fuck '
+    '767788412446048347': 'ß'
 }
 
 
 # todo option to select any prefix per server
+
 async def prefix(bot, message: discord.Message):
     try:
         prefix = prefixes[str(message.guild.id)]
@@ -31,7 +33,6 @@ async def prefix(bot, message: discord.Message):
 
     print(str(message.guild.id) + " " + prefix)
     return prefix
-
 
 intents = discord.Intents.default()
 intents.members = True
@@ -52,7 +53,7 @@ async def on_command_error(ctx, error):
         await ctx.send("Messages.error_not_owner " + (ctx.author.mention) + "!")
     if isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
         # await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
-        await ctx.send("Messages.on_cooldown" + " `" + str(int(error.cooldown.per)) + "s`!")
+        await ctx.send("Messages.on_cooldown" + " ``" + str(int(error.cooldown.per)) + "s``!")
         return
     if isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
         await ctx.send("Messages.missing_parameters")
@@ -82,7 +83,6 @@ async def on_ready():
     for guild in bot.guilds:
         print(str(guild) + " (" + str(guild.id) + ")")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=PREFIX + "help"))
-    time.sleep(1)
     print("\n\n\n\nBender " + VERSION + " started!")
 
 

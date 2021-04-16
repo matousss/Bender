@@ -1,1 +1,3 @@
-DEBUG = False
+DEBUG = True
+
+MAX_SONG_DURATION = 7200.0

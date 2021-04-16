@@ -3,12 +3,13 @@ from __future__ import annotations
 import functools
 from asyncio import AbstractEventLoop, get_running_loop
 from concurrent.futures import Executor
+from concurrent.futures.thread import ThreadPoolExecutor
 
 from discord.player import FFmpegPCMAudio
 from youtube_dl import YoutubeDL
 
-from settings import YTDL_OPTIONS
-from settings import FFMPEG_OPTIONS
+from .settings import YTDL_OPTIONS
+from .settings import FFMPEG_OPTIONS
 
 __all__ = ['Song', 'SongDetails']
 
@@ -43,19 +44,22 @@ class Song(object):
     def ready(self) -> bool:
         return not self.source is None
 
-    def prepare_to_go(self) -> None:
+    def prepare_to_go_blocking(self) -> None:
         """Prepare song for usage on discord"""
-        extracted = SongExtractor.extract_song(f"https://www.youtube.com/watch?v={self.details['id']}")
+        extracted = SongExtractor.extract_song_blocking(f"https://www.youtube.com/watch?v={self.details['id']}")
         self.source = FFmpegPCMAudio(extracted[0])
         self.thumbnail = extracted[1]
         pass
 
-    async def prepare_to_go_async(self):
+    async def prepare_to_go(self) -> None:
         """Prepare song for usage on discord but asyncio friendly"""
-        extracted = await SongExtractor.extract_song_async(f"https://www.youtube.com/watch?v={self.details['id']}")
-        self.source = FFmpegPCMAudio(extracted[0], options=FFMPEG_OPTIONS)
-        self.thumbnail = extracted[1]
+        extracted = await SongExtractor.extract_song(f"https://www.youtube.com/watch?v={self.details['id']}")
+        print("blizko"+str(extracted))
 
+        self.source = FFmpegPCMAudio(extracted[0], **FFMPEG_OPTIONS)
+        self.thumbnail = extracted[1]
+        print("song is ready to rock")
+        return None
     pass
 
 
@@ -63,7 +67,7 @@ class SongExtractor:
     _youtube_dl = YoutubeDL(YTDL_OPTIONS)
 
     @staticmethod
-    def extract_song(url: str) -> tuple[str, str]:
+    def extract_song_blocking(url: str) -> tuple[str, str]:
         """
         Get audio and thumbnail direct url with YoutubeDL and return it
 
@@ -72,15 +76,16 @@ class SongExtractor:
         url: :class:
             Must be in format "https://www.youtube.com/watch?v=<some_id>"
         """
-        song = SongExtractor._youtube_dl.extract_info("https://www.youtube.com")
-        print(str(song))
-        return song['formats'][0], song['formats'][0]['thumbnails'][0]['url']
+        song = SongExtractor._youtube_dl.extract_info(url, download=False)
+        print("tohle bude hrat: "+str(song))
+        return song['formats'][0]['url'], song['thumbnails'][0]['url']
 
     @staticmethod
-    async def extract_song_async(url: str, loop: AbstractEventLoop = None, executor: Executor = None) -> tuple[str, str]:
+    async def extract_song(url: str, loop: AbstractEventLoop = None, executor: Executor = ThreadPoolExecutor()) -> tuple[str, str]:
         """
         Execute SongExtractor.extract_song() with asyncio executor
         """
         if not loop:
             loop = get_running_loop()
-        return await loop.run_in_executor(executor, functools.partial(SongExtractor.extract_song, url))
+        result = await loop.run_in_executor(executor, functools.partial(SongExtractor.extract_song_blocking, url))
+        return result

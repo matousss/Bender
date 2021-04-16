@@ -9,12 +9,15 @@ YTDL_OPTIONS = {
     'ignoreerrors': False,
     'logtostderr': False,
     'no_warnings': False,
-    'default_search': 'auto',
-    # 'source_address': '0.0.0.0',
+    # 'default_search': 'auto',
+    'source_address': '0.0.0.0',
     'writesubtitles': False,
-    'geo_bypass': True,
+    # 'geo_bypass': True,
     'quiet': True,
-    'extract_flat': True
+    'extract_flat': True,
+    'sleep_interval': 15,
+    'call_home': False,
+    'prefer_ffmpeg': True
 }
 
 YTDL_OPTIONS_INFO_ONLY = YTDL_OPTIONS

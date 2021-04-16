@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-import asyncio
-import functools
-from asyncio import AbstractEventLoop, get_running_loop, QueueFull, QueueEmpty
-from concurrent.futures import Executor
+from asyncio import get_running_loop, run_coroutine_threadsafe, wait_for, create_task, QueueEmpty, \
+    Lock
+from asyncio.queues import QueueFull
 
 from discord import VoiceClient
 from youtube_dl import YoutubeDL
 
-from bender.modules.audio import settings
 from bender.utils.queue import IndexAsyncQueue as Queue
-from song import *
+from . import settings
+from .song import *
 
 __all__ = ['MusicPlayer', 'MusicSearcher']
 
 
-class MusicPlayer(object):
+class MusicPlayer():
     """
     Object representing music player
 
@@ -38,38 +37,72 @@ class MusicPlayer(object):
             raise ValueError(f"queue can't be {queue}")
         self.voice_client = voice_client
         self._queue = queue
-        self.now_playing: Song = None
+        self.now_playing = None
+        self.lock = Lock()
+        self.searcher = MusicSearcher()
         pass
 
-    def add_song(self, item: Song):
+    def __len__(self):
+        """
+        Returns
+        --------
+        int
+            Number of items in queue
+        """
+        return self._queue.qsize()
+
+    async def add_song(self, item: Song):
         """Add song to player queue
         Raises
         -------
         QueueEmpty
             Queue of player is full"""
+        print("dasdkjljnsjkadjksjkdnsjn" + str(item))
         self._queue.put_nowait(item)
 
-    def add_songs(self, songs: [Song]):
+    async def add_songs(self, songs: type([Song])):
         """Add all songs from array to player queue
 
-        Raises
-        -------
-        QueueEmpty
-            Queue of player is empty
-        """
-        for song in songs:
-            self.add_song(song)
+        Returns
+        --------
+        :class: Song
+            List of :class: Song which were not added to queue because of QueueFull exception
 
-    def get_song(self):
-        """Return and remove song from player queue
+        Raises
+        -------
+        QueueEmpty
+            Queue of player is empty
+
+        ValueError
+            Variable in songs isn't :class: Song
+        """
+        song = None
+        try:
+            for _ in songs:
+                song = songs.pop(0)
+                if isinstance(song, Song):
+                    try:
+                        await self.add_song(song)
+                    except QueueFull:
+                        songs.insert(0, song)
+                else:
+                    raise ValueError(f"Accept only {Song.__name__} and not {song.__class__.__name__}")
+        finally:
+            return songs
+
+    async def get_song(self):
+        """
+        Return and remove song from player queue
+
         Raises
         -------
         QueueEmpty
             Queue of player is empty
         """
+
         return self._queue.get_nowait()
 
-    def get_now_playing(self) -> Song:
+    async def get_now_playing(self) -> Song:
         """Returns now_playing
 
         Returns
@@ -77,30 +110,28 @@ class MusicPlayer(object):
         :class: Song
             Object of now playing audio
 
-        Raises
-        -------
-        QueueEmpty
-            Queue of player is empty
+        None
+            Returned when nothing is playing
         """
         if self.now_playing:
             return self.now_playing
         else:
             raise NotPlaying
 
-    def get_next(self) -> Song:
-        """
-        Get song from queue and prepare song after
+    # async def get_next(self) -> Song:
+    #     """
+    #     Get song from queue and prepare song after
+    #
+    #     Returns
+    #     --------
+    #     :class: Song
+    #         Next song in queue
+    #     """
+    #     next_song = await self.get_song()
+    #     self._queue.get_by_index(0).prepare_to_go()
+    #     return next_song
 
-        Returns
-        --------
-        :class: Song
-            Next song in queue
-        """
-        next_song = self.get_song()
-        self._queue.get_by_index(0).prepare_to_go()
-        return next_song
-
-    async def get_next_async(self):
+    async def get_next(self) -> Song:
         """
         Get song from queue and prepare song after
         Asyncio friendly
@@ -110,11 +141,18 @@ class MusicPlayer(object):
         :class: Song
             Next song in queue
         """
-        next_song = self.get_song()
-        await self._queue.get_by_index(0).prepare_to_go_async()
+
+        next_song = await self.get_song()
+        print(next_song)
+        try:
+            after = self._queue.get_by_index(0)
+            await after.prepare_to_go()
+        except IndexError:
+            pass
+
         return next_song
 
-    async def play(self, song: Song):
+    async def play(self) -> None:
         if not self.voice_client:
             raise ValueError("voice_client can't be Null")
         elif not self.voice_client.is_connected():
@@ -122,16 +160,40 @@ class MusicPlayer(object):
         elif self.voice_client.is_playing():
             raise AlreadyPlaying
 
-        def play_next():
-            self.voice_client.play(Song.source, after = play_next)
-            self.now_playing = song
+        loop = get_running_loop()
 
-    async def play_next(self):
-        await self.play(self.get_next().source)
+        def restart_play(error):
+            print(error)
+            coro = self.play()
+            fut = run_coroutine_threadsafe(coro, loop)
+            try:
+                fut.result()
+            except QueueEmpty:
+                return
+
+        song = await self.get_next()
+        task = create_task(song.prepare_to_go())
+        if not song.source:
+            await wait_for(task, timeout=None)
+        print("skoro to hraje")
+        self.voice_client.play(song.source, after=restart_play)
+        print("hnůj " + str(song))
+        self.now_playing = song
+        print("už hraju")
+
+    def remove(self, count: int = 1):
+        for _ in range(count):
+            self._queue.get_nowait()
+
+    def queue_empty(self) -> bool:
+        return self._queue.empty()
+
+    def qsize(self):
+        return self._queue.qsize()
 
 
 class NotPlaying(Exception):
-    """Raised by :class:`MusicPlayer.get_now_playing()` when no song playing"""
+    """Raised by :class: MusicPlayer.get_now_playing() when no song playing"""
     pass
 
 
@@ -157,9 +219,11 @@ class VoiceClientError(Exception):
         self.desc = desc
         super().__init__(self, desc)
 
+
 class NoSongToPlay(Exception):
     """Raised by MusicPlayer.play"""
     pass
+
 
 class NoResult(Exception):
     """Raised by MusicSearcher.search_song() when no result"""
@@ -171,14 +235,15 @@ class NoResult(Exception):
     pass
 
 
-class MusicSearcher:
+class MusicSearcher(object):
     """
     Search audio on youtube using youtube-dl
     """
+
     _youtube_dl = YoutubeDL(settings.YTDL_OPTIONS)
 
     @staticmethod
-    def search_song(text: str, retry: int = 2) -> Song / [Song]:
+    def search_song(text: str, retry: int = 2):
         """
         Search for song or playlist from given url or keyword
         Returns one Song() or list of Song()
@@ -188,7 +253,9 @@ class MusicSearcher:
         """
 
         def search(text: str):
+
             if text.startswith("https://") and (text.startswith("https://youtu.be/") or "youtube.com" in text):
+
                 s = MusicSearcher._youtube_dl.extract_info(text, download=False)
                 print(str(s))
                 if 'formats' in s:
@@ -201,9 +268,10 @@ class MusicSearcher:
                 return s
             else:
                 try:
+
                     s = MusicSearcher._youtube_dl.extract_info(f"ytsearch1:{text}", download=False)['entries'][0]
 
-                except IndexError:
+                except IndexError or TypeError:
                     return None
                 return s
 
@@ -226,16 +294,22 @@ class MusicSearcher:
 
         return Song(SongDetails(result['id'], result['title'], result['duration']))
 
-    @staticmethod
-    async def search_song_async(text: str, loop: AbstractEventLoop = None,
-                                executor: Executor = None) -> Song / [Song]:
-        """
-        Execute MusicSearcher.search_song() with asyncio executor
-        """
-        if not loop:
-            loop = get_running_loop()
-        return await loop.run_in_executor(executor, functools.partial(MusicSearcher.search_song, text))
-        pass
+    # async def search_song_async(self, text: str, loop: AbstractEventLoop = None,
+    #                             executor: Executor = ThreadPoolExecutor()) -> Song / [Song]:
+    #     """
+    #     Execute MusicSearcher.search_song() with asyncio executor
+    #     """
+    #     await self.lock.acquire()
+    #     try:
+    #
+    #         if not loop:
+    #             loop = get_running_loop()
+    #         print("zatím jedu")
+    #         task = loop.run_in_executor(executor, functools.partial(self.search_song, text))
+    #         return await wait_for(task, timeout=None)
+    #
+    #     finally:
+    #         print("nejedu")
+    #         self.lock.release()
 
     pass
-
