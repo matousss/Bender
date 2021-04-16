@@ -55,12 +55,14 @@ class MusicPlayer():
         """Add song to player queue
         Raises
         -------
-        QueueEmpty
+        QueueFull
             Queue of player is full"""
-        print("dasdkjljnsjkadjksjkdnsjn" + str(item))
-        self._queue.put_nowait(item)
+        if not self._queue.full():
+            await self._queue.put(item)
+        else:
+            raise QueueFull
 
-    async def add_songs(self, songs: type([Song])):
+    async def add_songs(self, songs: list):
         """Add all songs from array to player queue
 
         Returns
@@ -78,15 +80,18 @@ class MusicPlayer():
         """
         song = None
         try:
-            for _ in songs:
+            while len(songs) > 0:
                 song = songs.pop(0)
                 if isinstance(song, Song):
                     try:
-                        await self.add_song(song)
+                        task = self.add_song(song)
+                        await wait_for(task, timeout=None)
+
                     except QueueFull:
                         songs.insert(0, song)
                 else:
                     raise ValueError(f"Accept only {Song.__name__} and not {song.__class__.__name__}")
+
         finally:
             return songs
 
@@ -143,7 +148,7 @@ class MusicPlayer():
         """
 
         next_song = await self.get_song()
-        print(next_song)
+
         try:
             after = self._queue.get_by_index(0)
             await after.prepare_to_go()
@@ -175,11 +180,10 @@ class MusicPlayer():
         task = create_task(song.prepare_to_go())
         if not song.source:
             await wait_for(task, timeout=None)
-        print("skoro to hraje")
+
         self.voice_client.play(song.source, after=restart_play)
-        print("hnůj " + str(song))
+
         self.now_playing = song
-        print("už hraju")
 
     def remove(self, count: int = 1):
         for _ in range(count):
@@ -190,6 +194,13 @@ class MusicPlayer():
 
     def qsize(self):
         return self._queue.qsize()
+
+    async def current_queue(self) -> list:
+        await self.lock.acquire()
+        try:
+            return self._queue.get_current()
+        finally:
+            self.lock.release()
 
 
 class NotPlaying(Exception):
@@ -257,7 +268,7 @@ class MusicSearcher(object):
             if text.startswith("https://") and (text.startswith("https://youtu.be/") or "youtube.com" in text):
 
                 s = MusicSearcher._youtube_dl.extract_info(text, download=False)
-                print(str(s))
+
                 if 'formats' in s:
                     convert = {'_type': 'url_transparent', 'ie_key': '', 'id': s['id'], 'url': s['id'],
                                'title': s['title'],

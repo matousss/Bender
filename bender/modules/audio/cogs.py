@@ -5,7 +5,8 @@ import typing
 from asyncio import QueueEmpty
 from asyncio.queues import QueueFull
 
-import discord
+
+from discord import Embed, Color, VoiceChannel, VoiceClient, ClientException
 from discord.ext import commands
 from discord.ext.commands import BucketType
 
@@ -27,7 +28,7 @@ class VoiceClientCommands(commands.Cog, name="Voice client"):
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def _join(self, ctx, channel: typing.Optional[str] = None):
         if channel is not None:
-            if isinstance(channel, discord.VoiceChannel):
+            if isinstance(channel, VoiceChannel):
                 destination = channel
             else:
                 destination = butils.get_channel(ctx, channel)
@@ -62,7 +63,7 @@ class VoiceClientCommands(commands.Cog, name="Voice client"):
             else:
                 print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
             await ctx.send("unknown_error_join")
-            print(str(e))
+            print(e)
 
     @commands.command(name="leave", aliases=["dis", "disconnect", "l"])
     @commands.check(commands.cooldown(1, 10, commands.BucketType.user) or DEBUG)
@@ -104,7 +105,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                 await ctx.send("user_not_connected")
 
         # check if music player for that guild exist and get it or create new player
-        player: MusicPlayer = None
+        player = None
         try:
             player = self.players[str(ctx.guild.id)]
         except KeyError:
@@ -145,6 +146,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                     await ctx.send("error_too_long " + YoutubeMusic.format_song_details(song))
                     return
             elif isinstance(song, type([])):
+
                 for s in song:
                     if check_too_long(s):
                         await ctx.send("error_too_long " + YoutubeMusic.format_song_details(song))
@@ -155,12 +157,16 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                     f'song must be {Song.__name__} or {list.__name__}, but instead got {song.__class__.__name__}')
 
             if isinstance(song, list):
+
+                count = len(song)
                 first = song.pop(0)
+
                 try:
                     await player.add_song(first)
                 except QueueFull:
                     await ctx.send(f"queue_full (some song weren't add ({len(song) + 1}))")
                     return
+
 
                 try:
                     last_added = await player.add_songs(song)
@@ -168,7 +174,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                     # todo napsat kolik bylo přidáno a kolik ne (field v embed)
                     await ctx.send(f"queue_full (some song weren't add ({len(song)}))")
                     return
-                await ctx.send("added_to_queue")  # todo embed
+                await ctx.send(f"added_to_queue: {count-len(song)}")  # todo embed
             else:
                 try:
                     await player.add_song(song)
@@ -216,7 +222,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
                     except QueueEmpty:
                         pass
-                    except discord.ClientException:
+                    except ClientException:
                         pass
                     finally:
                         return
@@ -230,7 +236,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                             break
                     try:
                         ctx.voice_client.stop()
-                    except discord.ClientException:
+                    except ClientException:
                         pass
                     finally:
                         return
@@ -249,7 +255,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         title = song.details['title']
         duration = song.details['duration']
 
-        return f"now_playing ``{title if title else '<unknown>'} [{str(datetime.timedelta(seconds=duration)) if duration > 0 else '<unknown>'}]``"
+        return f"``{title if title else '<unknown>'} [{str(datetime.timedelta(seconds=duration)) if duration > 0 else '<unknown>'}]``"
 
     @commands.command(name='now playing', aliases=['np'])
     async def _nowplaying(self, ctx):
@@ -261,8 +267,44 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                 ctx.send("unknown_error")
                 return
             if player.now_playing:
-
-                await ctx.send(YoutubeMusic.format_song_details(player.now_playing))
+                await ctx.send(f"now_playing {YoutubeMusic.format_song_details(player.now_playing)}")
                 return
-            else:
-                await ctx.send("error_not_playing")
+
+        await ctx.send("error_not_playing")
+
+    @commands.command(name='queue', aliases=['q'])
+    async def _queue(self, ctx):
+        try:
+            player = self.players[str(ctx.guild.id)]
+
+        except KeyError:
+            await ctx.send("not_playing")
+            return
+        queue = await player.current_queue()
+        embeds = []
+        embeds.append(Embed(color=Color.red()))
+        embed = embeds[0]
+        embeds_count = 0
+        if player.now_playing:
+            embed.add_field(name="Now playing:", value=YoutubeMusic.format_song_details(player.now_playing), inline = False)
+
+        index = 0
+        sb = "Wow, such empty"
+
+        try:
+            index+=1
+            sb = f"{index}. {YoutubeMusic.format_song_details(queue.popleft())}"
+
+        except Exception as e:
+            raise e
+
+        for song in queue:
+            index += 1
+            embed.add_field(name="\u200b",value=f"\n{index}. {YoutubeMusic.format_song_details(song)}", inline = False)
+            if index%20 == 0:
+                embed.insert_field_at(index=1, name=f"In queue is currently [{(len(queue)+1)}] song/s:", value=sb)
+                embeds.append(Embed(color=Color.red()))
+                embeds_count+=1
+                embed = embeds[embeds_count]
+        for e in embeds:
+            await ctx.send(embed=e)

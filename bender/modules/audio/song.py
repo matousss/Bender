@@ -54,13 +54,16 @@ class Song(object):
     async def prepare_to_go(self) -> None:
         """Prepare song for usage on discord but asyncio friendly"""
         extracted = await SongExtractor.extract_song(f"https://www.youtube.com/watch?v={self.details['id']}")
-        print("blizko"+str(extracted))
+
 
         self.source = FFmpegPCMAudio(extracted[0], **FFMPEG_OPTIONS)
         self.thumbnail = extracted[1]
         print("song is ready to rock")
         return None
     pass
+
+
+
 
 
 class SongExtractor:
@@ -77,7 +80,7 @@ class SongExtractor:
             Must be in format "https://www.youtube.com/watch?v=<some_id>"
         """
         song = SongExtractor._youtube_dl.extract_info(url, download=False)
-        print("tohle bude hrat: "+str(song))
+
         return song['formats'][0]['url'], song['thumbnails'][0]['url']
 
     @staticmethod
