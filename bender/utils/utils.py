@@ -1,10 +1,6 @@
-from asyncio.queues import Queue
-
 import discord.utils as dutils
 
-__all__=['']
-
-
+__all__ = ['']
 
 
 def get_channel(ctx, channel: str):
@@ -16,3 +12,10 @@ def get_channel(ctx, channel: str):
         return dutils.get(ctx.guild.channels, name=channel)
 
 
+class BenderModuleError(Exception):
+    """
+    Raised by packages in bender.modules
+    """
+
+    def __init__(self, message: str):
+        super().__init__(message)

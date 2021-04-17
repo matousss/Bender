@@ -59,7 +59,7 @@ class Song(object):
         self.source = FFmpegPCMAudio(extracted[0], **FFMPEG_OPTIONS)
         self.thumbnail = extracted[1]
         print("song is ready to rock")
-        return None
+        return
     pass
 
 

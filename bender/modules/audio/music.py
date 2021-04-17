@@ -123,18 +123,6 @@ class MusicPlayer():
         else:
             raise NotPlaying
 
-    # async def get_next(self) -> Song:
-    #     """
-    #     Get song from queue and prepare song after
-    #
-    #     Returns
-    #     --------
-    #     :class: Song
-    #         Next song in queue
-    #     """
-    #     next_song = await self.get_song()
-    #     self._queue.get_by_index(0).prepare_to_go()
-    #     return next_song
 
     async def get_next(self) -> Song:
         """
@@ -152,6 +140,7 @@ class MusicPlayer():
         try:
             after = self._queue.get_by_index(0)
             await after.prepare_to_go()
+
         except IndexError:
             pass
 
@@ -168,7 +157,8 @@ class MusicPlayer():
         loop = get_running_loop()
 
         def restart_play(error):
-            print(error)
+            if error:
+                print(error)
             coro = self.play()
             fut = run_coroutine_threadsafe(coro, loop)
             try:
@@ -177,9 +167,9 @@ class MusicPlayer():
                 return
 
         song = await self.get_next()
-        task = create_task(song.prepare_to_go())
+
         if not song.source:
-            await wait_for(task, timeout=None)
+            await wait_for(song.prepare_to_go(), timeout=None)
 
         self.voice_client.play(song.source, after=restart_play)
 
@@ -305,22 +295,6 @@ class MusicSearcher(object):
 
         return Song(SongDetails(result['id'], result['title'], result['duration']))
 
-    # async def search_song_async(self, text: str, loop: AbstractEventLoop = None,
-    #                             executor: Executor = ThreadPoolExecutor()) -> Song / [Song]:
-    #     """
-    #     Execute MusicSearcher.search_song() with asyncio executor
-    #     """
-    #     await self.lock.acquire()
-    #     try:
-    #
-    #         if not loop:
-    #             loop = get_running_loop()
-    #         print("zatím jedu")
-    #         task = loop.run_in_executor(executor, functools.partial(self.search_song, text))
-    #         return await wait_for(task, timeout=None)
-    #
-    #     finally:
-    #         print("nejedu")
-    #         self.lock.release()
+
 
     pass

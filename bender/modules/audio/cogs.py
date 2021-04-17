@@ -5,8 +5,7 @@ import typing
 from asyncio import QueueEmpty
 from asyncio.queues import QueueFull
 
-
-from discord import Embed, Color, VoiceChannel, VoiceClient, ClientException
+from discord import Embed, Color, VoiceChannel, ClientException
 from discord.ext import commands
 from discord.ext.commands import BucketType
 
@@ -14,6 +13,7 @@ import bender.utils.utils as butils
 from bender.global_settings import MAX_SONG_DURATION
 
 __all__ = ['VoiceClientCommands', 'YoutubeMusic']
+
 
 from bender.global_settings import DEBUG
 from bender.modules.audio.music import MusicPlayer, MusicSearcher
@@ -167,14 +167,13 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                     await ctx.send(f"queue_full (some song weren't add ({len(song) + 1}))")
                     return
 
-
                 try:
                     last_added = await player.add_songs(song)
                 except QueueFull:
                     # todo napsat kolik bylo přidáno a kolik ne (field v embed)
                     await ctx.send(f"queue_full (some song weren't add ({len(song)}))")
                     return
-                await ctx.send(f"added_to_queue: {count-len(song)}")  # todo embed
+                await ctx.send(f"added_to_queue: {count - len(song)}")  # todo embed
             else:
                 try:
                     await player.add_song(song)
@@ -246,7 +245,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         await ctx.send("error_not_playing")
 
     # todo remove from queue command
-    # todo queue command
     # todo loop command
     # todo pause, resume cmd
 
@@ -286,13 +284,14 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         embed = embeds[0]
         embeds_count = 0
         if player.now_playing:
-            embed.add_field(name="Now playing:", value=YoutubeMusic.format_song_details(player.now_playing), inline = False)
+            embed.add_field(name="Now playing:", value=YoutubeMusic.format_song_details(player.now_playing),
+                            inline=False)
 
         index = 0
         sb = "Wow, such empty"
 
         try:
-            index+=1
+            index += 1
             sb = f"{index}. {YoutubeMusic.format_song_details(queue.popleft())}"
 
         except Exception as e:
@@ -300,11 +299,18 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
         for song in queue:
             index += 1
-            embed.add_field(name="\u200b",value=f"\n{index}. {YoutubeMusic.format_song_details(song)}", inline = False)
-            if index%20 == 0:
-                embed.insert_field_at(index=1, name=f"In queue is currently [{(len(queue)+1)}] song/s:", value=sb)
+            embed.add_field(name="\u200b", value=f"\n{index}. {YoutubeMusic.format_song_details(song)}", inline=False)
+
+            if index % 20 == 0:
                 embeds.append(Embed(color=Color.red()))
-                embeds_count+=1
+                embeds_count += 1
                 embed = embeds[embeds_count]
+
+            if index == 20:
+                embed.insert_field_at(index=1, name=f"In queue is currently [{(len(queue) + 1)}] song/s:", value=sb)
+
+        if index < 20:
+            embed.insert_field_at(index=1, name=f"In queue is currently [{(len(queue) + 1)}] song/s:", value=sb)
+
         for e in embeds:
             await ctx.send(embed=e)

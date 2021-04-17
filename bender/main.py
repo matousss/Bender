@@ -10,7 +10,7 @@ from discord.ext.commands import CommandNotFound
 from dotenv import load_dotenv
 
 import bender
-from bender.modules.audio.cogs import VoiceClientCommands, YoutubeMusic
+#from bender.modules.audio.cogs import VoiceClientCommands, YoutubeMusic
 from bender.global_settings import DEBUG
 #logging.basicConfig(filename="fuck.log", level=logging.DEBUG )
 load_dotenv()
@@ -68,8 +68,9 @@ def init_modules():
     # bot.add_cog(utils.Utils(bot))
     # bot.add_cog(utils.Moderation(bot))
     # bot.add_cog(shits.Shits(bot))
-    bot.add_cog(VoiceClientCommands(bot))
-    bot.add_cog(YoutubeMusic(bot))
+    # bot.add_cog(VoiceClientCommands(bot))
+    # bot.add_cog(YoutubeMusic(bot))
+
     pass
 
 

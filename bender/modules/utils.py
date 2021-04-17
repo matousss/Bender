@@ -19,12 +19,11 @@ class Utils(commands.Cog):
     @commands.command(name="ping")
     async def ping(self, ctx):
         # print("<INFO> ping: "+str(float(bot.latency)*1000).split(".")[0] +"ms")
-        await ctx.send("Ping: `" + str(float(ctx.bot.latency) * 1000).split(".")[0] + "ms`")
+        await ctx.send(f"Ping: `{str(round(float(ctx.bot.latency) * 1000))}ms`")
 
     @commands.command(name="suicide")
     @commands.is_owner()
     async def _suicide(self, ctx):
-        #sys.exit("Killed by Owner!")
         asyncio.get_event_loop().stop()
         pass
 
