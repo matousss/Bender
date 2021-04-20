@@ -16,7 +16,7 @@ class GoogleTranslator(Cog, name = 'Google Translator'):
 
     @command(name="translate", aliases=["tr"])
     @cooldown(1, 10, BucketType.user)
-    async def _translate(self, ctx, lang: str, seclang: typing.Optional[str] = "", *,
+    async def translate(self, ctx, lang: str, seclang: typing.Optional[str] = "", *,
                          content: typing.Optional[str] = ""):
         translator = Translator()
         destlang = "en"

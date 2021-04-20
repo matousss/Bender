@@ -7,7 +7,7 @@ from discord.ext.commands import Cog, BucketType, command, cooldown, check
 from bender.global_settings import DEBUG
 from bender.utils import utils as butils
 from bender.utils.utils import BenderModule
-
+from bender.utils.message_handler import get_text
 
 @BenderModule
 class VoiceClientCommands(Cog, name="Voice client"):
@@ -17,41 +17,42 @@ class VoiceClientCommands(Cog, name="Voice client"):
 
     @command(name="join", aliases=["j", "summon"])
     @cooldown(1, 10, BucketType.guild)
-    async def _join(self, ctx, channel: typing.Optional[str] = None):
+    async def join(self, ctx, channel: typing.Optional[str] = None):
         if channel is not None:
             if isinstance(channel, VoiceChannel):
                 destination = channel
             else:
                 destination = butils.get_channel(ctx, channel)
                 if not destination:
-                    await ctx.send(f'no_channel: {channel}')
+                    await ctx.send(f'{get_text("no_channel")}: {channel}')
                     return
 
         elif ctx.author.voice and ctx.author.voice.channel:
             destination = ctx.author.voice.channel
         else:
-            await ctx.send("not_specified_channel")
+            await ctx.send(get_text("channel_not_specified"))
             return
 
         if ctx.voice_client and ctx.voice_client.is_connected() and channel is None:
             if ctx.voice_client.channel == ctx.author.voice.channel:
-                await ctx.send("already_in_same_channel")
+                await ctx.send(get_text("join_error_same_channel"))
                 return
             else:
                 try:
                     await ctx.voice_client.move_to(destination)
-                    await ctx.send("joined " + destination.name)
+                    await ctx.send(f"{get_text('join')} {destination.name}")
 
                 except Exception:
-                    await ctx.send("unknown_error_join")
+                    await ctx.send("join_error_unknown")
                 return
 
         try:
             await destination.connect()
-            await ctx.send("joined " + destination.name)
+            await ctx.send(f"{get_text('join')} {destination.name}")
             print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
 
         except Exception as e:
+            traceback.print_exc()
             if destination is None:
                 print("<ERROR> Error occurred while joining channel: no channel specified or user is not in channel")
             else:
@@ -59,9 +60,9 @@ class VoiceClientCommands(Cog, name="Voice client"):
             await ctx.send("unknown_error_join")
             traceback.print_exc()
 
-    @command(name="leave", aliases=["dis", "disconnect", "l"])
+    @command(name="disconnect", aliases=["dis", "leave", "l"])
     @check(cooldown(1, 10, BucketType.user) or DEBUG)
-    async def _leave(self, ctx):
+    async def disconnect(self, ctx):
         if ctx.voice_client:
             if ctx.voice_client.is_connected:
                 try:

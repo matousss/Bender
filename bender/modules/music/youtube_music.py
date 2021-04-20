@@ -33,14 +33,14 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         print(f"Initialized {str(__name__)}")
 
     @commands.command(name="zmk", aliases=["za"])
-    async def _zmk(self, ctx):
+    async def zmk(self, ctx):
         player = self.players[str(ctx.guild.id)]
         await ctx.send(player.lock.locked())
         await ctx.send(str(player.now_playing))
 
     @commands.command(name="play", aliases=["p"])
     @commands.cooldown(1, 3, type=commands.BucketType.guild)
-    async def _play(self, ctx, *, what: str):
+    async def play(self, ctx, *, what: str):
         print("started")
         # check if in voice channel, connect to some if not
         if not ctx.voice_client or not ctx.voice_client.is_connected():
@@ -145,7 +145,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
     # todo fix
     @commands.command(name='skip', aliases=['s'])
-    async def _skip(self, ctx, count: typing.Optional[int] = 1):
+    async def skip(self, ctx, count: typing.Optional[int] = 1):
         # todo skip <count>
         if ctx.voice_client and ctx.voice_client.is_playing():
             player = self.players[str(ctx.guild.id)]
@@ -204,7 +204,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                f" [{str(datetime.timedelta(seconds=duration)) if duration > 0 else '<unknown>'}]``"
 
     @commands.command(name='now playing', aliases=['np'])
-    async def _nowplaying(self, ctx):
+    async def nowplaying(self, ctx):
 
         if ctx.voice_client and ctx.voice_client.is_playing():
             try:
@@ -219,7 +219,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         await ctx.send("error_not_playing")
 
     @commands.command(name='queue', aliases=['q'])
-    async def _queue(self, ctx):
+    async def queue(self, ctx):
         # todo pages
         try:
             player = self.players[str(ctx.guild.id)]

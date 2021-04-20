@@ -1,1 +1,2 @@
-__all__ = ['queue', 'utils']
+__all__ = ['queue', 'utils', 'message_handler']
+

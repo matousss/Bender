@@ -1,4 +1,4 @@
-__all__ = ['youtubemusic', 'music', 'song', 'settings']
+__all__ = ['youtube_music', 'music', 'song', 'settings']
 
 
-__cogs__ = ['.\\youtubemusic.py']
+__cogs__ = ['.\\youtube_music.py']

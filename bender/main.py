@@ -9,9 +9,10 @@ from discord.ext.commands import CommandNotFound
 from dotenv import load_dotenv
 
 import bender
-import bender.modules as modules
+import modules
 # print(sys.modules.keys())
-from bender.utils.utils import BenderModuleError
+from utils.utils import BenderModuleError
+from bender.modules import __cogs__
 
 load_dotenv()
 TOKEN = os.environ.get("DISCORD_TOKEN")
@@ -24,18 +25,14 @@ prefixes = {
 
 
 def import_from_dir(package_path, package_name):
-    print(os.listdir(package_path))
     for file in os.listdir(package_path):
-        print(f"file {file}")
         if not file.startswith('__'):
             if file.endswith(".py"):
                 file = file.replace('.py', '')
-                print(f"imported {package_name}.{file}")
                 importlib.import_module(f'{package_name}.{file}')
                 continue
 
             if not os.path.isdir(os.path.join(".", str(file))):
-                print("hovno")
                 # import_from_dir(package_path + file + "\\", f'{package_name}.{file}')
                 try:
                     cogs = importlib.import_module(f'{package_name}.{file}').__cogs__
@@ -46,9 +43,7 @@ def import_from_dir(package_path, package_name):
 
                 for c in cogs:
                     c = c.replace('.\\', '').replace('.py', '')
-                    print(c)
                     importlib.import_module(f'{package_name}.{file}.{c}')
-                    print(f"imported {package_name}.{file}.{c}")
                 pass
 
     pass
@@ -116,8 +111,9 @@ if __name__ == '__main__':
             DEBUG = True
 
     print("Starting...\n\n")
+
     import_from_dir(str(modules.__file__).replace('__init__.py', ''), 'modules')
-    from modules import __cogs__
+
     for cog in __cogs__:
         BOT.add_cog(cog(BOT))
     BOT.run(TOKEN)

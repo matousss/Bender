@@ -27,7 +27,7 @@ class Moderation(Cog):
         return False
 
     @command(name="kick_old", aliases=["k_old"])
-    async def _kick_old(self, ctx, option: str = None, channel: typing.Optional[str] = None, *,
+    async def kick_old(self, ctx, option: str = None, channel: typing.Optional[str] = None, *,
                     users: typing.Optional[str] = ""):
         destination = None
         if option and option.startswith("<@"):
@@ -126,7 +126,7 @@ class Moderation(Cog):
 
 
     @command(name="move", aliases=["m", "mv"])
-    async def _move(self, ctx, option: str = None, arg_source: typing.Optional[str] = "",
+    async def move(self, ctx, option: str = None, arg_source: typing.Optional[str] = "",
                     arg_destination: typing.Optional[str] = "", *, users: typing.Optional[str] = ""):
         get_destination = None
         get_source = None
