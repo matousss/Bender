@@ -6,10 +6,10 @@ from discord.ext.commands import Cog, BucketType, command, cooldown, check
 
 from bender.global_settings import DEBUG
 from bender.utils import utils as butils
-from bender.utils.utils import BenderModule
+from bender.utils.utils import bender_module
 from bender.utils.message_handler import get_text
 
-@BenderModule
+@bender_module
 class VoiceClientCommands(Cog, name="Voice client"):
     def __init__(self, bot):
         self.bot = bot
@@ -43,7 +43,7 @@ class VoiceClientCommands(Cog, name="Voice client"):
                     await ctx.send(f"{get_text('join')} {destination.name}")
 
                 except Exception:
-                    await ctx.send("join_error_unknown")
+                    await ctx.send(get_text("join_error_unknown"))
                 return
 
         try:
@@ -57,7 +57,7 @@ class VoiceClientCommands(Cog, name="Voice client"):
                 print("<ERROR> Error occurred while joining channel: no channel specified or user is not in channel")
             else:
                 print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
-            await ctx.send("unknown_error_join")
+            await ctx.send(get_text("unknown_error_join"))
             traceback.print_exc()
 
     @command(name="disconnect", aliases=["dis", "leave", "l"])
@@ -68,7 +68,7 @@ class VoiceClientCommands(Cog, name="Voice client"):
                 try:
                     await ctx.voice_client.move_to(None)
                 except Exception as e:
-                    await ctx.send("leave_error")
-                    print(e)
+                    await ctx.send(get_text("leave_error"))
+                    raise e
                 return
-        await ctx.send("not_connected_error")
+        await ctx.send(get_text("no_channel_error"))

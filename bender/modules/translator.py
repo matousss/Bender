@@ -5,10 +5,10 @@ from googletrans import Translator
 
 __all__ = ['GoogleTranslator']
 
-from bender.utils.utils import BenderModule
+from bender.utils.utils import bender_module
+from bender.utils.message_handler import get_text
 
-
-@BenderModule
+@bender_module
 class GoogleTranslator(Cog, name = 'Google Translator'):
     def __init__(self, bot):
         self.bot = bot
@@ -44,6 +44,6 @@ class GoogleTranslator(Cog, name = 'Google Translator'):
             else:
                 product = translator.translate(content, src=srclang, dest=destlang)
         except ValueError:
-            await ctx.send("invalid_language_code")
+            await ctx.send(get_text("translate_error_invalid_code"))
             return
         await ctx.send("Translated from `" + product.src + "` as `" + product.text + "`")

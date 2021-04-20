@@ -4,10 +4,10 @@ from discord.ext.commands import Cog, command, is_owner
 
 __all__ = ['Info']
 
-from bender.utils.utils import BenderModule
+from bender.utils.utils import bender_module
 
 
-@BenderModule
+@bender_module
 class Info(Cog):
     def __init__(self, bot):
         self.bot = bot

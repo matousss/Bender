@@ -1,17 +1,17 @@
-
 import typing
 
-from discord.ext.commands import Cog, command, bot, Context
+from discord.ext.commands import Cog, command, Context
 
 from bender.main import BOT
 from bender.utils import utils as butils
 
 __all__ = ['Moderation']
 
-from bender.utils.utils import BenderModule
+from bender.utils.utils import bender_module
+from bender.utils.message_handler import get_text
 
 
-@BenderModule
+@bender_module
 class Moderation(Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -28,7 +28,7 @@ class Moderation(Cog):
 
     @command(name="kick_old", aliases=["k_old"])
     async def kick_old(self, ctx, option: str = None, channel: typing.Optional[str] = None, *,
-                    users: typing.Optional[str] = ""):
+                       users: typing.Optional[str] = ""):
         destination = None
         if option and option.startswith("<@"):
             users += option
@@ -49,7 +49,7 @@ class Moderation(Cog):
         if ctx.author.voice and ctx.author.voice.channel and channel is None:
             destination = ctx.author.voice.channel
         elif destination is None:
-            await ctx.send("No possible voice channel found!")
+            await ctx.send(get_text("no_channel_error"))
             return
         users_ids_list = None
 
@@ -96,8 +96,9 @@ class Moderation(Cog):
                 destination = ctx.author.voice.channel
 
         if not destination:
-            await ctx.send("channel_specification_error", reference=ctx.message, mention_author= False)
-            return
+            await ctx.send((get_text("no_channel_error")), reference=ctx.message, mention_author=False)
+
+        return
 
         kicked = 0
         if ctx.message.mentions:
@@ -121,13 +122,11 @@ class Moderation(Cog):
                 await ctx.send("empty_channel")
                 return
 
-        await ctx.send(f"kicked: {kicked}")
-
-
+        await ctx.send(f"{get_text('kicked')}: {kicked}")
 
     @command(name="move", aliases=["m", "mv"])
     async def move(self, ctx, option: str = None, arg_source: typing.Optional[str] = "",
-                    arg_destination: typing.Optional[str] = "", *, users: typing.Optional[str] = ""):
+                   arg_destination: typing.Optional[str] = "", *, users: typing.Optional[str] = ""):
         get_destination = None
         get_source = None
         a = False
@@ -142,7 +141,7 @@ class Moderation(Cog):
                     if arg_destination.startswith("<@"):
                         users += arg_destination
                 else:
-                    await ctx.send("None source channel defined!2")
+                    await ctx.send(get_text("no_channel_error"))
                     return
             else:
                 get_source = arg_source
@@ -158,7 +157,7 @@ class Moderation(Cog):
                     get_destination = option
                     source = ctx.author.voice.channel
                 else:
-                    await ctx.send("None source channel defined!")
+                    await ctx.send(get_text("no_channel_error"))
                     return
                 if arg_source.startswith("<@"):
                     users += arg_source
@@ -174,7 +173,7 @@ class Moderation(Cog):
         if get_source is not None:
             source = butils.getChannel(ctx, get_source)
         if source is None or not destination:
-            await ctx.send("Wrong channel!")
+            await ctx.send(get_text("no_channel_error"))
             return
         users_ids_list = None
         force_all = False
