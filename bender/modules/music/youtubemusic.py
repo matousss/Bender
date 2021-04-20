@@ -1,3 +1,4 @@
+from __future__ import annotations
 import asyncio
 import datetime
 import functools
@@ -5,84 +6,31 @@ import typing
 from asyncio import QueueEmpty
 from asyncio.queues import QueueFull
 
-from discord import Embed, Color, VoiceChannel, ClientException
+from discord import Embed, Color, ClientException
 from discord.ext import commands
-from discord.ext.commands import BucketType
 
-import bender.utils.utils as butils
 from bender.global_settings import MAX_SONG_DURATION
 
-__all__ = ['VoiceClientCommands', 'YoutubeMusic']
+__all__ = ['YoutubeMusic']
+
+from bender.modules.music.music import MusicPlayer, MusicSearcher
+from bender.modules.music.song import Song
+from bender.utils.utils import BenderModule
+
+try:
+    from bender.modules.voiceclient import VoiceClientCommands
+except ImportError:
+    from bender.utils.utils import BenderModuleError
+
+    raise BenderModuleError(f"{__name__} requires VoiceClientCommands module to work")
 
 
-from bender.global_settings import DEBUG
-from bender.modules.audio.music import MusicPlayer, MusicSearcher
-from bender.modules.audio.song import Song
-
-
-class VoiceClientCommands(commands.Cog, name="Voice client"):
-    def __init__(self, bot):
-        self.bot = bot
-
-    @commands.command(name="join", aliases=["j", "summon"])
-    @commands.cooldown(1, 10, commands.BucketType.guild)
-    async def _join(self, ctx, channel: typing.Optional[str] = None):
-        if channel is not None:
-            if isinstance(channel, VoiceChannel):
-                destination = channel
-            else:
-                destination = butils.get_channel(ctx, channel)
-
-        elif ctx.author.voice and ctx.author.voice.channel:
-            destination = ctx.author.voice.channel
-        else:
-            await ctx.send("not_specified_channel")
-            return
-
-        if ctx.voice_client and ctx.voice_client.is_connected() and channel is None:
-            if ctx.voice_client.channel == ctx.author.voice.channel:
-                await ctx.send("already_in_same_channel")
-                return
-            else:
-                try:
-                    await ctx.voice_client.move_to(destination)
-                    await ctx.send("joined " + destination.name)
-
-                except:
-                    await ctx.send("unknown_error_join")
-                return
-
-        try:
-            await destination.connect()
-            await ctx.send("joined " + destination.name)
-            print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
-
-        except Exception as e:
-            if destination is None:
-                print("<ERROR> Error occurred while joining channel: no channel specified or user is not in channel")
-            else:
-                print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
-            await ctx.send("unknown_error_join")
-            print(e)
-
-    @commands.command(name="leave", aliases=["dis", "disconnect", "l"])
-    @commands.check(commands.cooldown(1, 10, commands.BucketType.user) or DEBUG)
-    async def _leave(self, ctx):
-        if ctx.voice_client:
-            if ctx.voice_client.is_connected:
-                try:
-                    await ctx.voice_client.move_to(None)
-                except Exception as e:
-                    await ctx.send("leave_error")
-                    print(e)
-                return
-        await ctx.send("not_connected_error")
-
-
+@BenderModule
 class YoutubeMusic(commands.Cog, name="Youtube Music"):
     def __init__(self, bot):
         self.bot = bot
         self.players = {}
+        print(f"Initialized {str(__name__)}")
 
     @commands.command(name="zmk", aliases=["za"])
     async def _zmk(self, ctx):
@@ -91,7 +39,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         await ctx.send(str(player.now_playing))
 
     @commands.command(name="play", aliases=["p"])
-    @commands.cooldown(1, 3, type=BucketType.guild)
+    @commands.cooldown(1, 3, type=commands.BucketType.guild)
     async def _play(self, ctx, *, what: str):
         print("started")
         # check if in voice channel, connect to some if not
@@ -146,10 +94,9 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                     await ctx.send("error_too_long " + YoutubeMusic.format_song_details(song))
                     return
             elif isinstance(song, type([])):
-
                 for s in song:
                     if check_too_long(s):
-                        await ctx.send("error_too_long " + YoutubeMusic.format_song_details(song))
+                        await ctx.send("error_too_long " + YoutubeMusic.format_song_details(s))
                         song.remove(s)
 
             else:
@@ -253,7 +200,8 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         title = song.details['title']
         duration = song.details['duration']
 
-        return f"``{title if title else '<unknown>'} [{str(datetime.timedelta(seconds=duration)) if duration > 0 else '<unknown>'}]``"
+        return f"``{title if title else '<unknown>'}" \
+               f" [{str(datetime.timedelta(seconds=duration)) if duration > 0 else '<unknown>'}]``"
 
     @commands.command(name='now playing', aliases=['np'])
     async def _nowplaying(self, ctx):
@@ -272,6 +220,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
     @commands.command(name='queue', aliases=['q'])
     async def _queue(self, ctx):
+        # todo pages
         try:
             player = self.players[str(ctx.guild.id)]
 
@@ -279,8 +228,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             await ctx.send("not_playing")
             return
         queue = await player.current_queue()
-        embeds = []
-        embeds.append(Embed(color=Color.red()))
+        embeds = [Embed(color=Color.red())]
         embed = embeds[0]
         embeds_count = 0
         if player.now_playing:
@@ -289,13 +237,15 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
         index = 0
         sb = "Wow, such empty"
-
         try:
             index += 1
-            sb = f"{index}. {YoutubeMusic.format_song_details(queue.popleft())}"
+            first = f"{index}. {YoutubeMusic.format_song_details(queue.popleft())}"
 
         except Exception as e:
             raise e
+
+        if first:
+            sb = first
 
         for song in queue:
             index += 1

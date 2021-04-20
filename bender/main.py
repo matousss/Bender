@@ -1,8 +1,7 @@
-# utils.py
+import importlib
 import logging
-import os.path
+import os
 import sys
-import time
 
 import discord
 from discord.ext import commands
@@ -10,9 +9,10 @@ from discord.ext.commands import CommandNotFound
 from dotenv import load_dotenv
 
 import bender
-#from bender.modules.audio.cogs import VoiceClientCommands, YoutubeMusic
-from bender.global_settings import DEBUG
-#logging.basicConfig(filename="fuck.log", level=logging.DEBUG )
+import bender.modules as modules
+# print(sys.modules.keys())
+from bender.utils.utils import BenderModuleError
+
 load_dotenv()
 TOKEN = os.environ.get("DISCORD_TOKEN")
 PREFIX = str(os.environ.get("PREFIX"))
@@ -23,6 +23,37 @@ prefixes = {
 }
 
 
+def import_from_dir(package_path, package_name):
+    print(os.listdir(package_path))
+    for file in os.listdir(package_path):
+        print(f"file {file}")
+        if not file.startswith('__'):
+            if file.endswith(".py"):
+                file = file.replace('.py', '')
+                print(f"imported {package_name}.{file}")
+                importlib.import_module(f'{package_name}.{file}')
+                continue
+
+            if not os.path.isdir(os.path.join(".", str(file))):
+                print("hovno")
+                # import_from_dir(package_path + file + "\\", f'{package_name}.{file}')
+                try:
+                    cogs = importlib.import_module(f'{package_name}.{file}').__cogs__
+                except AttributeError:
+                    logging.exception(BenderModuleError("BenderModule package have to have variable __cogs__\n"
+                                                        f"which holds paths to cogs -> skipping {package_name}.{file}"))
+                    continue
+
+                for c in cogs:
+                    c = c.replace('.\\', '').replace('.py', '')
+                    print(c)
+                    importlib.import_module(f'{package_name}.{file}.{c}')
+                    print(f"imported {package_name}.{file}.{c}")
+                pass
+
+    pass
+
+
 # todo option to select any prefix per server
 
 async def prefix(bot, message: discord.Message):
@@ -31,21 +62,21 @@ async def prefix(bot, message: discord.Message):
     except KeyError:
         prefix = prefixes['default']
 
-    print(str(message.guild.id) + " " + prefix)
     return prefix
+
 
 intents = discord.Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix=prefix, intents=intents, owner_id=494216665664323585)
+BOT = commands.Bot(command_prefix=prefix, intents=intents, owner_id=494216665664323585)
 
 
-@bot.event
+@BOT.event
 async def on_command(command):
     print("<INFO> " + str(command.author.name) + "#" + str(command.author.id) + " executed command " + str(
         command.command))
 
 
-@bot.event
+@BOT.event
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
         return
@@ -61,44 +92,32 @@ async def on_command_error(ctx, error):
     raise error
 
 
-def init_modules():
-    # bot.add_cog(audio.YoutubeMusic(bot))
-    # #bot.add_cog(bender.modules.audio.SoundBoard(bot))
-    # #bot.add_cog(modules.utils.Greetings(bot))
-    # bot.add_cog(utils.Utils(bot))
-    # bot.add_cog(utils.Moderation(bot))
-    # bot.add_cog(shits.Shits(bot))
-    # bot.add_cog(VoiceClientCommands(bot))
-    # bot.add_cog(YoutubeMusic(bot))
-
-    pass
-
-
-@bot.event
+@BOT.event
 async def on_ready():
-
-
-    print("\n\n" + f'{bot.user} has connected to Discord!\n\n')
+    print("\n\n" + f'{BOT.user} has connected to Discord!\n\n')
 
     print("Connected to servers:")
-    for guild in bot.guilds:
+    for guild in BOT.guilds:
         print(str(guild) + " (" + str(guild.id) + ")")
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=PREFIX + "help"))
-    print("\n\n\n\nBender " + VERSION + " started!")
+    await BOT.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=PREFIX + "help"))
+    print("\n\nBender " + VERSION + " started!")
 
 
-@bot.event
+@BOT.event
 async def on_guild_join(guild):
     if guild.system_channel:
         await guild.system_channel.send("I am Bender please insert girder")
 
-#todo run options
+
+# todo run options
 if __name__ == '__main__':
     for arg in sys.argv:
         if arg == "-thomashadneverseensuchabullshitbefore":
             DEBUG = True
+
     print("Starting...\n\n")
-    init_modules()
-    bot.run(TOKEN)
-
-
+    import_from_dir(str(modules.__file__).replace('__init__.py', ''), 'modules')
+    from modules import __cogs__
+    for cog in __cogs__:
+        BOT.add_cog(cog(BOT))
+    BOT.run(TOKEN)
