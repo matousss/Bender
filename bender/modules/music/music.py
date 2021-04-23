@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import traceback
-from asyncio import get_running_loop, run_coroutine_threadsafe, wait_for, create_task, QueueEmpty, \
-    Lock
+from asyncio import get_running_loop, run_coroutine_threadsafe, wait_for, Lock, TimeoutError as AsyncioTimeoutError
 from asyncio.queues import QueueFull
 from typing import Coroutine
 
@@ -42,6 +41,7 @@ class MusicPlayer():
         self.now_playing = None
         self.lock = Lock()
         self.searcher = MusicSearcher()
+        self.idle = True
         pass
 
     def __len__(self):
@@ -52,6 +52,27 @@ class MusicPlayer():
             Number of items in queue
         """
         return self._queue.qsize()
+
+    def __getattribute__(self, item):
+        method = object.__getattribute__(self, item)
+        if callable(method):
+            if self.idle:
+                self.idle = False
+        return method
+
+    def __del__(self):
+        if self.voice_client and self.voice_client.is_connected():
+            try:
+                loop = get_running_loop()
+                fut = run_coroutine_threadsafe(self.voice_client.disconnect(), loop)
+            except:
+                traceback.print_exc()
+                return
+
+        try:
+            fut.result()
+        except:
+            traceback.print_exc()
 
     async def add_song(self, item: Song):
         """Add song to player queue
@@ -125,19 +146,17 @@ class MusicPlayer():
         :class: Song
             Next song in queue
 
-        Raises
-        -------
-        :class: TimeoutError
-            Raised when there's no item in queue and time runs out
+        None
+            None is returned when queue is empty and timeout occurred
         """
-        print("háj")
-        next_song = await wait_for(await self.get_song(), timeout = timeout)
-        print(str(next_song))
-        print(f"zelený {self._queue.empty()} {str(self._queue._queue)}")
+        try:
+            next_song = await wait_for(await self.get_song(), timeout=timeout)
+        except AsyncioTimeoutError:
+            print("jo")
+            return None
         if not self._queue.empty():
             after = await self._queue.get_by_index(0)
             await after.prepare_to_go()
-        print("pečený")
         return next_song
 
     async def get_next_nowait(self) -> Song:
@@ -172,7 +191,7 @@ class MusicPlayer():
         loop = get_running_loop()
 
         def restart_play(error):
-            #https://discordpy.readthedocs.io/en/stable/faq.html#how-do-i-pass-a-coroutine-to-the-player-s-after-function
+            # https://discordpy.readthedocs.io/en/stable/faq.html#how-do-i-pass-a-coroutine-to-the-player-s-after-function
             if error:
                 print(error)
             coro = self.play()
@@ -180,10 +199,17 @@ class MusicPlayer():
             try:
                 fut.result()
             except TimeoutError:
-                traceback.print_exc()
+                #traceback.print_exc()
+                print(self.idle)
                 return
 
-        song = await self.get_next(timeout=5.0)
+        song = await self.get_next(timeout=30.0)
+        if not song:
+            self.idle = True
+            print(f"{str(self)} is idle")
+
+            get_running_loop().create_task()
+            return
 
         if not song.source:
             await wait_for(song.prepare_to_go(), timeout=None)
@@ -208,6 +234,25 @@ class MusicPlayer():
             return await self._queue.get_current()
         finally:
             self.lock.release()
+
+    def pause(self):
+        if not self.voice_client.is_playing():
+            raise AlreadyPlaying()
+        if self.voice_client.is_paused():
+            raise AlreadyPaused()
+        try:
+            self.voice_client.pause()
+        except Exception:
+            traceback.print_exc()
+
+    def resume(self):
+        if not self.voice_client.is_paused():
+            raise NotPaused()
+
+        try:
+            self.voice_client.resume()
+        except Exception:
+            traceback.print_exc()
 
 
 class NotPlaying(Exception):
@@ -311,7 +356,5 @@ class MusicSearcher(object):
             return result
 
         return Song(SongDetails(result['id'], result['title'], result['duration']))
-
-
 
     pass

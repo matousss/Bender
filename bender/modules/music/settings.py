@@ -1,3 +1,8 @@
+
+
+
+#todo load from file
+#todo proxy
 YTDL_OPTIONS = {
     'format': 'worstaudio/worst',
     'extractaudio': True,
@@ -17,7 +22,8 @@ YTDL_OPTIONS = {
     'extract_flat': True,
     'sleep_interval': 15,
     'call_home': False,
-    'prefer_ffmpeg': True
+    'prefer_ffmpeg': True,
+
 }
 
 YTDL_OPTIONS_INFO_ONLY = YTDL_OPTIONS

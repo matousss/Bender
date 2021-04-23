@@ -10,16 +10,23 @@ from dotenv import load_dotenv
 
 import bender
 import modules
-# print(sys.modules.keys())
-from utils.utils import BenderModuleError
 from bender.modules import __cogs__
+from bender.utils.message_handler import get_text
+# print(sys.modules.keys())
+from bender.utils.utils import BenderModuleError
+
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter("%(asctime)s %(name)-30s %(levelname)-8s %(message)s"))
+logger.addHandler(handler)
 
 load_dotenv()
 TOKEN = os.environ.get("DISCORD_TOKEN")
 PREFIX = str(os.environ.get("PREFIX"))
 VERSION = bender.__version__
 prefixes = {
-    'default': ',',
+    '-1': ',',
     '767788412446048347': 'ß'
 }
 
@@ -48,16 +55,17 @@ def import_from_dir(package_path, package_name):
 
     pass
 
-
+# todo option command
 # todo option to select any prefix per server
 
 async def prefix(bot, message: discord.Message):
     try:
-        prefix = prefixes[str(message.guild.id)]
-    except KeyError:
-        prefix = prefixes['default']
+        if message.guild:
 
-    return prefix
+            return prefixes[str(message.guild.id)]
+    except KeyError:
+        pass
+    return prefixes['-1']
 
 
 intents = discord.Intents.default()
@@ -74,17 +82,23 @@ async def on_command(command):
 @BOT.event
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
+        await ctx.send(get_text("command_not_found_error"))
         return
-    if isinstance(error, discord.ext.commands.errors.NotOwner):
-        await ctx.send("Messages.error_not_owner " + (ctx.author.mention) + "!")
-    if isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
+    elif isinstance(error, discord.ext.commands.errors.NotOwner):
+        await ctx.send(get_text("error_not_owner") + (ctx.author.mention) + "!")
+    elif isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
         # await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
-        await ctx.send("Messages.on_cooldown" + " ``" + str(int(error.cooldown.per)) + "s``!")
+        await ctx.send(get_text("on_cooldown_error") + " ``" + str(int(error.cooldown.per)) + "s``!")
         return
-    if isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
-        await ctx.send("Messages.missing_parameters")
+    elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
+        await ctx.send(get_text("missing_parameters_error"))
         return
-    raise error
+    elif isinstance(error, discord.ext.commands.NoPrivateMessage):
+        await ctx.send(get_text("guild_only"))
+
+
+    else:
+        raise error
 
 
 @BOT.event

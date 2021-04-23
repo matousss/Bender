@@ -1,24 +1,23 @@
 from __future__ import annotations
+
 import asyncio
 import datetime
 import functools
-import traceback
 import typing
 from asyncio import QueueEmpty
 from asyncio.queues import QueueFull
 
 from discord import Embed, Color, ClientException
 from discord.ext import commands
-from discord.ext import tasks
+from discord.permissions import Permissions
 
 from bender.global_settings import MAX_SONG_DURATION
 from bender.modules.music.music import MusicPlayer, MusicSearcher
 from bender.modules.music.song import Song
-from bender.utils.utils import bender_module
 from bender.utils.message_handler import get_text
+from bender.utils.utils import bender_module
 
 __all__ = ['YoutubeMusic']
-
 
 try:
     from bender.modules.voiceclient import VoiceClientCommands
@@ -31,27 +30,29 @@ except ImportError:
 @bender_module
 class YoutubeMusic(commands.Cog, name="Youtube Music"):
     def __init__(self, bot):
-        self.bot = bot
+        self.BOT = bot
         self.players = {}
         print(f"Initialized {str(__name__)}")
 
-
-
-
+    # @commands.
+    # def delete_player(self, key: str):
 
     @commands.command(name="play", aliases=["p"])
+    @commands.bot_has_permissions(speak = True, connect = True)
+    @commands.guild_only()
     @commands.cooldown(1, 3, type=commands.BucketType.guild)
     async def play(self, ctx, *, what: str):
         print("started")
         # check if in voice channel, connect to some if not
         if not ctx.voice_client or not ctx.voice_client.is_connected():
             if ctx.author.voice and ctx.author.voice.channel:
-                join = self.bot.get_command('join')
+                join = self.BOT.get_command('join')
                 if join:
                     await ctx.invoke(join, channel=ctx.author.voice.channel)
                 else:
-                    raise BenderModuleError("Tried invoke command join from modules.voiceclient.VoiceClientCommands but "
-                                            "it doesn't exist")
+                    raise BenderModuleError(
+                        "Tried invoke command join from modules.voiceclient.VoiceClientCommands but "
+                        "it doesn't exist")
             elif ctx.voice_client and not ctx.voice_client.is_connected():
                 await ctx.send(get_text("no_channel_error"))
                 return
@@ -68,6 +69,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             player = self.players[str(ctx.guild.id)]
         await player.lock.acquire()
         # todo send embed messages
+
         try:
             if ctx.voice_client and ctx.voice_client.is_connected:
                 if ctx.author.voice.channel:
@@ -152,6 +154,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
     # todo fix
     @commands.command(name='skip', aliases=['s'])
+    @commands.guild_only()
     async def skip(self, ctx, count: typing.Optional[int] = 1):
         # todo skip <count>
         if ctx.voice_client and ctx.voice_client.is_playing():
@@ -202,7 +205,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     # todo loop command
     # todo pause, resume cmd
 
-
     @staticmethod
     def format_song_details(song: Song) -> str:
         title = song.details['title']
@@ -212,6 +214,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                f" [{str(datetime.timedelta(seconds=duration)) if duration > 0 else '<NaN>'}]``"
 
     @commands.command(name='now playing', aliases=['np'])
+    @commands.guild_only()
     async def nowplaying(self, ctx):
 
         if ctx.voice_client and ctx.voice_client.is_playing():
@@ -233,6 +236,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         await ctx.send(get_text("error_not_playing"))
 
     @commands.command(name='queue', aliases=['q'])
+    @commands.guild_only()
     async def queue(self, ctx):
         # todo pages
         try:
@@ -250,7 +254,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                             inline=False)
 
         index = 0
-        #sb = "Wow, such empty"
+        # sb = "Wow, such empty"
         sb = get_text('empty')
         try:
             index += 1
@@ -272,10 +276,13 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                 embed = embeds[embeds_count]
 
             if index == 20:
-                embed.insert_field_at(index=1, name=f"{get_text('current_queue')} [{(len(queue) + 1)}] {get_text('song')}:", value=sb)
+                embed.insert_field_at(index=1,
+                                      name=f"{get_text('current_queue')} [{(len(queue) + 1)}] {get_text('song')}:",
+                                      value=sb)
 
         if index < 20:
-            embed.insert_field_at(index=1, name=f"{get_text('current_queue')} [{(len(queue) + 1)}] {get_text('song')}:", value=sb)
+            embed.insert_field_at(index=1, name=f"{get_text('current_queue')} [{(len(queue) + 1)}] {get_text('song')}:",
+                                  value=sb)
 
         for e in embeds:
             await ctx.send(embed=e)

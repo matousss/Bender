@@ -2,7 +2,7 @@ import traceback
 import typing
 
 from discord import VoiceChannel
-from discord.ext.commands import Cog, BucketType, command, cooldown, check
+from discord.ext.commands import Cog, BucketType, command, cooldown, check, Context, guild_only, bot_has_guild_permissions
 
 from bender.global_settings import DEBUG
 from bender.utils import utils as butils
@@ -16,8 +16,10 @@ class VoiceClientCommands(Cog, name="Voice client"):
         print(f"Initialized {str(__name__)}")
 
     @command(name="join", aliases=["j", "summon"])
+    @guild_only()
+    @bot_has_guild_permissions(connect = True, speak = True)
     @cooldown(1, 10, BucketType.guild)
-    async def join(self, ctx, channel: typing.Optional[str] = None):
+    async def join(self, ctx: Context, channel: typing.Optional[str] = None):
         if channel is not None:
             if isinstance(channel, VoiceChannel):
                 destination = channel
@@ -46,6 +48,9 @@ class VoiceClientCommands(Cog, name="Voice client"):
                     await ctx.send(get_text("join_error_unknown"))
                 return
 
+        if destination.permissions_for(ctx.me).connect is False or destination.permissions_for(ctx.me).speak is False:
+            await ctx.send(get_text('missing_permissions_error'))
+            return
         try:
             await destination.connect()
             await ctx.send(f"{get_text('join')} {destination.name}")
@@ -61,7 +66,7 @@ class VoiceClientCommands(Cog, name="Voice client"):
             traceback.print_exc()
 
     @command(name="disconnect", aliases=["dis", "leave", "l"])
-    @check(cooldown(1, 10, BucketType.user) or DEBUG)
+    @cooldown(1, 10, BucketType.user)
     async def disconnect(self, ctx):
         if ctx.voice_client:
             if ctx.voice_client.is_connected:

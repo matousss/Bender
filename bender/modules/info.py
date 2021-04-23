@@ -1,6 +1,6 @@
 from asyncio import get_event_loop
 
-from discord.ext.commands import Cog, command, is_owner
+from discord.ext.commands import Cog, command, is_owner, check, guild_only
 
 __all__ = ['Info']
 
@@ -10,7 +10,7 @@ from bender.utils.utils import bender_module
 @bender_module
 class Info(Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.BOT = bot
         print(f"Initialized {str(__name__)}")
 
     # @commands.command(name="info")
@@ -21,7 +21,7 @@ class Info(Cog):
     @command(name="ping")
     async def ping(self, ctx):
         # print("<INFO> ping: "+str(float(bot.latency)*1000).split(".")[0] +"ms")
-        await ctx.send(f"Ping: `{str(round(float(ctx.BOT.latency) * 1000))}ms`")
+        await ctx.send(f"Ping: ``{str(round(float(ctx.BOT.latency) * 1000))}ms``")
 
     @command(name="suicide")
     @is_owner()
@@ -30,6 +30,7 @@ class Info(Cog):
         pass
 
     @command(name="deleteme", aliases=['dem'])
+    @guild_only()
     async def deleteme(self, ctx, args):
         await ctx.message.delete()
     pass
