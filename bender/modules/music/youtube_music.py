@@ -9,15 +9,17 @@ from asyncio.queues import QueueFull
 
 from discord import Embed, Color, ClientException
 from discord.ext import commands
+from discord.ext import tasks
 
 from bender.global_settings import MAX_SONG_DURATION
-
-__all__ = ['YoutubeMusic']
-
 from bender.modules.music.music import MusicPlayer, MusicSearcher
 from bender.modules.music.song import Song
 from bender.utils.utils import bender_module
 from bender.utils.message_handler import get_text
+
+__all__ = ['YoutubeMusic']
+
+
 try:
     from bender.modules.voiceclient import VoiceClientCommands
 except ImportError:
@@ -33,11 +35,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         self.players = {}
         print(f"Initialized {str(__name__)}")
 
-    @commands.command(name="zmk", aliases=["za"])
-    async def zmk(self, ctx):
-        player = self.players[str(ctx.guild.id)]
-        await ctx.send(player.lock.locked())
-        await ctx.send(str(player.now_playing))
+
 
 
 
@@ -48,10 +46,15 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         # check if in voice channel, connect to some if not
         if not ctx.voice_client or not ctx.voice_client.is_connected():
             if ctx.author.voice and ctx.author.voice.channel:
-
-                await ctx.invoke(VoiceClientCommands.join, ctx, channel=ctx.author.voice.channel)
-                if ctx.voice_client and not ctx.voice_client.is_connected():
-                    return
+                join = self.bot.get_command('join')
+                if join:
+                    await ctx.invoke(join, channel=ctx.author.voice.channel)
+                else:
+                    raise BenderModuleError("Tried invoke command join from modules.voiceclient.VoiceClientCommands but "
+                                            "it doesn't exist")
+            elif ctx.voice_client and not ctx.voice_client.is_connected():
+                await ctx.send(get_text("no_channel_error"))
+                return
             else:
                 await ctx.send(get_text("not_connected_error"))
                 return
@@ -199,6 +202,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     # todo loop command
     # todo pause, resume cmd
 
+
     @staticmethod
     def format_song_details(song: Song) -> str:
         title = song.details['title']
@@ -211,11 +215,16 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     async def nowplaying(self, ctx):
 
         if ctx.voice_client and ctx.voice_client.is_playing():
-            try:
+            # try:
+            #     player = self.players[str(ctx.guild.id)]
+            # except KeyError:
+            #     traceback.print_exc()
+            #     ctx.send(get_text("unknown_error"))
+            #     return
+            if str(ctx.guild.id) in self.players.keys():
                 player = self.players[str(ctx.guild.id)]
-            except KeyError:
-                traceback.print_exc()
-                ctx.send(get_text("unknown_error"))
+            else:
+                await ctx.send(get_text("not_playing_error"))
                 return
             if player.now_playing:
                 await ctx.send(f"{get_text('now_playing')} {YoutubeMusic.format_song_details(player.now_playing)}")

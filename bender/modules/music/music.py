@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import traceback
 from asyncio import get_running_loop, run_coroutine_threadsafe, wait_for, create_task, QueueEmpty, \
     Lock
 from asyncio.queues import QueueFull
+from typing import Coroutine
 
 from discord import VoiceClient
 from youtube_dl import YoutubeDL
@@ -95,17 +97,11 @@ class MusicPlayer():
         finally:
             return songs
 
-    async def get_song(self):
-        """
-        Return and remove song from player queue
-
-        Raises
-        -------
-        QueueEmpty
-            Queue of player is empty
-        """
-
+    async def get_song_nowait(self) -> Coroutine:
         return self._queue.get_nowait()
+
+    async def get_song(self) -> Coroutine:
+        return self._queue.get()
 
     async def get_now_playing(self) -> Song:
         """Returns now_playing
@@ -118,16 +114,35 @@ class MusicPlayer():
         None
             Returned when nothing is playing
         """
-        if self.now_playing:
-            return self.now_playing
-        else:
-            raise NotPlaying
+        return self.now_playing
 
-
-    async def get_next(self) -> Song:
+    async def get_next(self, timeout: float = None) -> Song:
         """
         Get song from queue and prepare song after
-        Asyncio friendly
+
+        Returns
+        --------
+        :class: Song
+            Next song in queue
+
+        Raises
+        -------
+        :class: TimeoutError
+            Raised when there's no item in queue and time runs out
+        """
+        print("háj")
+        next_song = await wait_for(await self.get_song(), timeout = timeout)
+        print(str(next_song))
+        print(f"zelený {self._queue.empty()} {str(self._queue._queue)}")
+        if not self._queue.empty():
+            after = await self._queue.get_by_index(0)
+            await after.prepare_to_go()
+        print("pečený")
+        return next_song
+
+    async def get_next_nowait(self) -> Song:
+        """
+        Get song from queue and prepare song after
 
         Returns
         --------
@@ -135,10 +150,10 @@ class MusicPlayer():
             Next song in queue
         """
 
-        next_song = await self.get_song()
+        next_song = await self.get_song_nowait()
 
         try:
-            after = self._queue.get_by_index(0)
+            after = await self._queue.get_by_index(0)
             await after.prepare_to_go()
 
         except IndexError:
@@ -157,16 +172,18 @@ class MusicPlayer():
         loop = get_running_loop()
 
         def restart_play(error):
+            #https://discordpy.readthedocs.io/en/stable/faq.html#how-do-i-pass-a-coroutine-to-the-player-s-after-function
             if error:
                 print(error)
             coro = self.play()
             fut = run_coroutine_threadsafe(coro, loop)
             try:
                 fut.result()
-            except QueueEmpty:
+            except TimeoutError:
+                traceback.print_exc()
                 return
 
-        song = await self.get_next()
+        song = await self.get_next(timeout=5.0)
 
         if not song.source:
             await wait_for(song.prepare_to_go(), timeout=None)
@@ -188,7 +205,7 @@ class MusicPlayer():
     async def current_queue(self) -> list:
         await self.lock.acquire()
         try:
-            return self._queue.get_current()
+            return await self._queue.get_current()
         finally:
             self.lock.release()
 

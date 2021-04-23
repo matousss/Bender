@@ -31,5 +31,5 @@ def bender_module(cog: Cog):
             return
     print(f"<INFO> registered cog {cog.__name__}")
     __cogs__.append(cog)
-
+    return cog
     pass
