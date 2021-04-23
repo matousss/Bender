@@ -1,6 +1,6 @@
 import typing
 
-from discord.ext.commands import Cog, command, Context
+from discord.ext.commands import Cog, command, Context, group
 
 from bender.main import BOT
 from bender.utils import utils as butils
@@ -13,9 +13,14 @@ from bender.utils.message_handler import get_text
 
 @bender_module
 class Moderation(Cog):
+
+
     def __init__(self, bot):
         self.bot = bot
         print(f"Initialized {str(__name__)}")
+
+
+
 
     @staticmethod
     def have_match(input_list, what):
@@ -26,64 +31,14 @@ class Moderation(Cog):
                 return True
         return False
 
-    @command(name="kick_old", aliases=["k_old"])
-    async def kick_old(self, ctx, option: str = None, channel: typing.Optional[str] = None, *,
-                       users: typing.Optional[str] = ""):
-        destination = None
-        if option and option.startswith("<@"):
-            users += option
-            option = "all"
-
-        if channel and channel.startswith("<@"):
-            users += channel
-            channel = None
-        if channel is None and option != "all" and option != "others" and option != "a" and option != "o" and not option:
-            channel = option
-            option = "all"
-        if option is None:
-            await ctx.send("Syntax error")
-            return
-        if channel is not None:
-            destination = butils.get_channel(ctx, channel)
-
-        if ctx.author.voice and ctx.author.voice.channel and channel is None:
-            destination = ctx.author.voice.channel
-        elif destination is None:
-            await ctx.send(get_text("no_channel_error"))
-            return
-        users_ids_list = None
-
-        if users != "":
-            users = users.replace(",", "").replace("<@!", " ").replace(">", "").replace("\n", "")
-            users = " ".join(users.split())
-            users_ids_list = users.split(" ")
-            force_all = False
-        else:
-            force_all = True
-        if option == "all" or option == "a":
-            a = True
-        elif option == "others" or option == "o":
-            a = False
-            if users_ids_list is None:
-                users_ids_list = [ctx.author.id]
-        else:
-            print("<ERROR> An error occured while executing _kick")
-            return
-
-        for mem in destination.members:
-
-            if Moderation.have_match(users_ids_list, mem.id) == a or force_all is True:
-                await mem.move_to(None)
-                print("<INFO> Kicked user: " + str(mem) + " from " + str(destination))
-
-        pass
-
-    @BOT.group(name="kick", aliases=["k"])
+    @group(name="kick", aliases=["k"])
     async def kick(self, ctx: Context):
         if ctx.invoked_subcommand is None:
             print(ctx.message.mentions)
             await ctx.invoke(self.all)
         pass
+
+
 
     @kick.command(aliases=['a'])
     async def all(self, ctx: Context, *, destination: typing.Optional[str] = None):

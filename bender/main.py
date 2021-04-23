@@ -15,9 +15,12 @@ from bender.utils.message_handler import get_text
 # print(sys.modules.keys())
 from bender.utils.utils import BenderModuleError
 
+#todo relative imports
+#todo turn to app
+
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename='../data/discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter("%(asctime)s %(name)-30s %(levelname)-8s %(message)s"))
 logger.addHandler(handler)
 
@@ -130,4 +133,7 @@ if __name__ == '__main__':
 
     for cog in __cogs__:
         BOT.add_cog(cog(BOT))
+
+    for c in BOT.commands:
+        print(c.name)
     BOT.run(TOKEN)
