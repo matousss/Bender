@@ -202,13 +202,15 @@ class MusicPlayer():
                 #traceback.print_exc()
                 print(self.idle)
                 return
+            except VoiceClientError:
+                print("Bop was kicked by user")
 
         song = await self.get_next(timeout=30.0)
         if not song:
             self.idle = True
             print(f"{str(self)} is idle")
 
-            get_running_loop().create_task()
+
             return
 
         if not song.source:
@@ -229,11 +231,8 @@ class MusicPlayer():
         return self._queue.qsize()
 
     async def current_queue(self) -> list:
-        await self.lock.acquire()
-        try:
-            return await self._queue.get_current()
-        finally:
-            self.lock.release()
+        return await self._queue.get_current()
+
 
     def pause(self):
         if not self.voice_client.is_playing():

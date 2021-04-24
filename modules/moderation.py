@@ -39,7 +39,7 @@ class Moderation(Cog):
         pass
 
 
-
+    #todo https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html#greedy
     @kick.command(aliases=['a'])
     async def all(self, ctx: Context, *, destination: typing.Optional[str] = None):
         if destination:

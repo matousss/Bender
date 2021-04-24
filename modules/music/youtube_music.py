@@ -17,9 +17,11 @@ from modules.music.song import Song
 from utils.message_handler import get_text
 from utils.utils import BenderModuleError
 from utils.utils import bender_module
+from utils.checks import can_join_speak
 
 __all__ = ['YoutubeMusic']
 logger = logging.getLogger('discord')
+
 
 @bender_module
 class YoutubeMusic(commands.Cog, name="Youtube Music"):
@@ -42,9 +44,8 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             warnings.warn(warning)
             logger.error(warning)
 
-
     @commands.command(name="play", aliases=["p"])
-    @commands.bot_has_permissions(speak=True, connect=True)
+    @commands.check(can_join_speak)
     @commands.guild_only()
     @commands.cooldown(1, 3, type=commands.BucketType.guild)
     async def play(self, ctx, *, what: str):
@@ -158,7 +159,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     @commands.command(name='skip', aliases=['s'])
     @commands.guild_only()
     async def skip(self, ctx, count: typing.Optional[int] = 1):
-        # todo skip <count>
+        print("co se děje")
         if ctx.voice_client and ctx.voice_client.is_playing():
             player = self.players[str(ctx.guild.id)]
             await player.lock.acquire()
@@ -240,50 +241,59 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     @commands.guild_only()
     async def queue(self, ctx):
         # todo pages
+
         try:
             player = self.players[str(ctx.guild.id)]
 
         except KeyError:
             await ctx.send(get_text("not_playing_error"))
             return
-        queue = await player.current_queue()
-        embeds = [Embed(color=Color.red())]
-        embed = embeds[0]
-        embeds_count = 0
-        if player.now_playing:
-            embed.add_field(name=get_text("now_playing"), value=YoutubeMusic.format_song_details(player.now_playing),
-                            inline=False)
-
-        index = 0
-        # sb = "Wow, such empty"
-        sb = get_text('empty')
+        await ctx.send(player.lock.locked)
+        await player.lock.acquire()
         try:
-            index += 1
-            first = f"{index}. {YoutubeMusic.format_song_details(queue.popleft())}"
+            queue = await player.current_queue()
+            print("hovno")
+            embeds = [Embed(color=Color.red())]
+            embed = embeds[0]
+            embeds_count = 0
+            if player.now_playing:
+                embed.add_field(name=get_text("now_playing"),
+                                value=YoutubeMusic.format_song_details(player.now_playing),
+                                inline=False)
 
-        except Exception as e:
-            raise e
+            index = 0
+            # sb = "Wow, such empty"
+            sb = get_text('empty')
+            if len(queue) > 0:
+                index += 1
+                first = f"{index}. {YoutubeMusic.format_song_details(queue.popleft())}"
+            else:
+                first = None
 
-        if first:
-            sb = first
+            if first:
+                sb = first
 
-        for song in queue:
-            index += 1
-            embed.add_field(name="\u200b", value=f"\n{index}. {YoutubeMusic.format_song_details(song)}", inline=False)
+            for song in queue:
+                index += 1
+                embed.add_field(name="\u200b", value=f"\n{index}. {YoutubeMusic.format_song_details(song)}", \
+                                inline=False)
 
-            if index % 20 == 0:
-                embeds.append(Embed(color=Color.red()))
-                embeds_count += 1
-                embed = embeds[embeds_count]
+                if index % 20 == 0:
+                    embeds.append(Embed(color=Color.red()))
+                    embeds_count += 1
+                    embed = embeds[embeds_count]
 
-            if index == 20:
-                embed.insert_field_at(index=1,
-                                      name=f"{get_text('current_queue')} [{(len(queue) + 1)}] {get_text('song')}:",
+                if index == 20:
+                    embed.insert_field_at(index=1,
+                                          name=f"{get_text('current_queue')} [{(len(queue) + 1)}] {get_text('song')}:",
+                                          value=sb)
+
+            if index < 20:
+                embed.insert_field_at(index=1, name=f"{get_text('in_queue (%s)')}"
+                                                    % (len(queue) + (1 if first else 0)),
                                       value=sb)
 
-        if index < 20:
-            embed.insert_field_at(index=1, name=f"{get_text('current_queue')} [{(len(queue) + 1)}] {get_text('song')}:",
-                                  value=sb)
-
-        for e in embeds:
-            await ctx.send(embed=e)
+            for e in embeds:
+                await ctx.send(embed=e)
+        finally:
+            player.lock.release()

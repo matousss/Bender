@@ -6,18 +6,12 @@ __all__ = ['IndexAsyncQueue']
 
 class IndexAsyncQueue(Queue):
     async def get_by_index(self, index: int):
-        await self.join()
-        try:
-            return self._queue[index]
-        finally:
-            self.task_done()
+        return self._queue[index]
 
     async def get_current(self):
-        await self.join()
-        try:
-            return self._queue.copy()
-        finally:
-            self.task_done()
+
+        return self._queue.copy()
+
     pass
 
 

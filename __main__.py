@@ -34,6 +34,8 @@ BOT = commands.Bot(command_prefix=_prefix, intents=intents, owner_id=49421666566
 
 #todo help command
 
+
+# events
 @BOT.event
 async def on_ready():
     print("\n\n" + f'{BOT.user} has connected to Discord!\n\n')
@@ -49,6 +51,12 @@ async def on_ready():
 async def on_guild_join(guild):
     if guild.system_channel:
         await guild.system_channel.send(get_text('on_join'))
+
+
+@BOT.event
+async def on_command(command):
+    print(f"<INFO> {str(command.author.name)} #{str(command.author.id)} executed command {str(command.command)}")
+
 
 @BOT.event
 async def on_command_error(ctx, error):
@@ -66,7 +74,8 @@ async def on_command_error(ctx, error):
         return
     elif isinstance(error, discord.ext.commands.NoPrivateMessage):
         await ctx.send(get_text("guild_only"))
-
+    elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions):
+        await ctx.send(get_text("missing_permissions"))
 
     else:
         raise error
