@@ -1,9 +1,9 @@
 import traceback
 import typing
 
-from discord import VoiceChannel
+from discord import VoiceChannel, ClientException
 from discord.ext.commands import Cog, BucketType, command, cooldown, check, Context, guild_only, \
-    bot_has_guild_permissions
+    bot_has_guild_permissions, BotMissingPermissions
 
 from global_settings import DEBUG
 from utils import utils as butils
@@ -19,9 +19,12 @@ class VoiceClientCommands(Cog, name="Voice client"):
 
     @command(name="join", aliases=["j", "summon"])
     @guild_only()
-    @bot_has_guild_permissions(connect=True, speak=True)
+    # @bot_has_guild_permissions(connect=True, speak=True)
     @cooldown(1, 10, BucketType.guild)
     async def join(self, ctx: Context, channel: typing.Optional[str] = None):
+        if ctx.voice_client and ctx.voice_client.is_connected():
+            raise ClientException("Already connected to voice channel")
+
         if channel is not None:
             if isinstance(channel, VoiceChannel):
                 destination = channel
@@ -51,7 +54,8 @@ class VoiceClientCommands(Cog, name="Voice client"):
                 return
 
         if destination.permissions_for(ctx.me).connect is False or destination.permissions_for(ctx.me).speak is False:
-            await ctx.send(get_text('missing_permissions_error'))
+            # await ctx.send(get_text('missing_permissions_error'))
+            raise BotMissingPermissions()
             return
         try:
             await destination.connect()
@@ -64,7 +68,7 @@ class VoiceClientCommands(Cog, name="Voice client"):
                 print("<ERROR> Error occurred while joining channel: no channel specified or user is not in channel")
             else:
                 print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
-            await ctx.send(get_text("unknown_error_join"))
+            await ctx.send(get_text("unexpected_error_join"))
             traceback.print_exc()
 
     @command(name="disconnect", aliases=["dis", "leave", "l"])
@@ -76,6 +80,6 @@ class VoiceClientCommands(Cog, name="Voice client"):
                     await ctx.voice_client.move_to(None)
                 except Exception as e:
                     await ctx.send(get_text("leave_error"))
-                    raise e
+                    traceback.print_exc()
                 return
         await ctx.send(get_text("no_channel_error"))

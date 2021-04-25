@@ -2,19 +2,21 @@ import logging
 import sys
 import traceback
 
-
 import discord
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
+from youtube_dl import DownloadError
 
 from __init__ import __version__
+# noinspection PyUnresolvedReferences
+import modules
 from utils.config import Config
 from utils.message_handler import get_text
-from utils.utils import prefix as _prefix, global_variable
-# noinspection PyUnresolvedReferences
-from modules import *
+from utils.utils import prefix as _prefix, set_global_variable, default_prefix
 
+# todo bender logger
 
+# todo handle all exceptions
 
 
 # todo relative imports
@@ -30,9 +32,10 @@ logger.addHandler(handler)
 intents = discord.Intents.default()
 intents.members = True
 BOT = commands.Bot(command_prefix=_prefix, intents=intents, owner_id=494216665664323585,
-                   activity=discord.Activity(type=discord.ActivityType.listening, name=f"{_prefix}help"))
+                   activity=discord.Activity(type=discord.ActivityType.listening, name=f"{default_prefix()}help"))
 
-#todo help command
+
+# todo help command
 
 
 # events
@@ -62,31 +65,29 @@ async def on_command(command):
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
         await ctx.send(get_text("command_not_found_error"))
-        return
     elif isinstance(error, discord.ext.commands.errors.NotOwner):
         await ctx.send(get_text("error_not_owner %s") % ctx.author.mention)
     elif isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
         # await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
         await ctx.send(get_text("on_cooldown_error") + " ``" + str(int(error.cooldown.per)) + "s``!")
-        return
     elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
         await ctx.send(get_text("missing_parameters_error"))
-        return
     elif isinstance(error, discord.ext.commands.NoPrivateMessage):
         await ctx.send(get_text("guild_only"))
     elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions):
         await ctx.send(get_text("missing_permissions"))
+    elif isinstance(error, DownloadError):
+        await ctx.send(get_text("lost_connection_error"))
 
     else:
         raise error
-
 
 
 if __name__ == '__main__':
     for arg in sys.argv:
         print(arg)
 
-    config = global_variable(Config(), 'config')
+    config = set_global_variable(Config(), 'config')
 
     # config['debug'] = True
 
@@ -105,6 +106,7 @@ if __name__ == '__main__':
     #         key = Fernet.generate_key()
 
     from utils.utils import __cogs__
+
     print(__cogs__)
     for cog in __cogs__:
         cog = cog(BOT)

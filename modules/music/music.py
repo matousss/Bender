@@ -3,7 +3,7 @@ from __future__ import annotations
 import traceback
 from asyncio import get_running_loop, run_coroutine_threadsafe, wait_for, Lock, TimeoutError as AsyncioTimeoutError
 from asyncio.queues import QueueFull
-from typing import Coroutine
+from typing import Coroutine, Union
 
 from discord import VoiceClient
 from youtube_dl import YoutubeDL
@@ -15,7 +15,7 @@ from .song import *
 __all__ = ['MusicPlayer', 'MusicSearcher']
 
 
-class MusicPlayer():
+class MusicPlayer(object):
     """
     Object representing music player
 
@@ -65,25 +65,24 @@ class MusicPlayer():
             try:
                 loop = get_running_loop()
                 fut = run_coroutine_threadsafe(self.voice_client.disconnect(), loop)
-            except:
+            except Exception:
                 traceback.print_exc()
                 return
 
-        try:
-            fut.result()
-        except:
-            traceback.print_exc()
+            try:
+                fut.result()
+            except Exception:
+                traceback.print_exc()
 
-    async def add_song(self, item: Song):
+    def add_song_nowait(self, item: Song):
         """Add song to player queue
         Raises
         -------
         QueueFull
             Queue of player is full"""
-        if not self._queue.full():
-            await self._queue.put(item)
-        else:
-            raise QueueFull
+        if not isinstance(item, Song):
+            raise ValueError(f"Accept only {Song.__name__} and not {item.__class__.__name__}")
+        self._queue.put_nowait(item)
 
     async def add_songs(self, songs: list):
         """Add all songs from array to player queue
@@ -101,24 +100,26 @@ class MusicPlayer():
         ValueError
             Variable in songs isn't :class: Song
         """
-        song = None
+
         try:
             while len(songs) > 0:
                 song = songs.pop(0)
                 if isinstance(song, Song):
                     try:
-                        task = self.add_song(song)
-                        await wait_for(task, timeout=None)
+                        self.add_song_nowait(song)
+                        # taks = self.add_song_nowait(song)
+                        # await wait_for(task, timeout=None)
 
                     except QueueFull:
                         songs.insert(0, song)
+                        raise
                 else:
                     raise ValueError(f"Accept only {Song.__name__} and not {song.__class__.__name__}")
 
         finally:
             return songs
 
-    async def get_song_nowait(self) -> Coroutine:
+    async def get_song_nowait(self) -> Song:
         return self._queue.get_nowait()
 
     async def get_song(self) -> Coroutine:
@@ -137,7 +138,7 @@ class MusicPlayer():
         """
         return self.now_playing
 
-    async def get_next(self, timeout: float = None) -> Song:
+    async def get_next(self, timeout: float = None) -> Union[Song, None]:
         """
         Get song from queue and prepare song after
 
@@ -152,14 +153,13 @@ class MusicPlayer():
         try:
             next_song = await wait_for(await self.get_song(), timeout=timeout)
         except AsyncioTimeoutError:
-            print("jo")
             return None
         if not self._queue.empty():
             after = await self._queue.get_by_index(0)
             await after.prepare_to_go()
         return next_song
 
-    async def get_next_nowait(self) -> Song:
+    async def get_next_nowait(self) -> Union[Song, None]:
         """
         Get song from queue and prepare song after
 
@@ -199,17 +199,16 @@ class MusicPlayer():
             try:
                 fut.result()
             except TimeoutError:
-                #traceback.print_exc()
+                # traceback.print_exc()
                 print(self.idle)
                 return
             except VoiceClientError:
-                print("Bop was kicked by user")
+                print("<INFO> Bot was kicked by user or lost connection to channel")
 
         song = await self.get_next(timeout=30.0)
         if not song:
             self.idle = True
             print(f"{str(self)} is idle")
-
 
             return
 
@@ -232,7 +231,6 @@ class MusicPlayer():
 
     async def current_queue(self) -> list:
         return await self._queue.get_current()
-
 
     def pause(self):
         if not self.voice_client.is_playing():
@@ -314,11 +312,12 @@ class MusicSearcher(object):
         retry - How many should youtube_dl retry when first attempt fail 
         """
 
-        def search(text: str):
+        def search(keywords: str):
 
-            if text.startswith("https://") and (text.startswith("https://youtu.be/") or "youtube.com" in text):
+            if keywords.startswith("https://") and (keywords.startswith("https://youtu.be/") or
+                                                    "youtube.com" in keywords):
 
-                s = MusicSearcher._youtube_dl.extract_info(text, download=False)
+                s = MusicSearcher._youtube_dl.extract_info(keywords, download=False)
 
                 if 'formats' in s:
                     convert = {'_type': 'url_transparent', 'ie_key': '', 'id': s['id'], 'url': s['id'],
@@ -331,7 +330,7 @@ class MusicSearcher(object):
             else:
                 try:
 
-                    s = MusicSearcher._youtube_dl.extract_info(f"ytsearch1:{text}", download=False)['entries'][0]
+                    s = MusicSearcher._youtube_dl.extract_info(f"ytsearch1:{keywords}", download=False)['entries'][0]
 
                 except IndexError or TypeError:
                     return None
@@ -350,6 +349,7 @@ class MusicSearcher(object):
             x = result
             result = []
             for entry in x['entries']:
+                # noinspection PyTypeChecker
                 result.append(Song(SongDetails(entry['id'], entry['title'], float(entry['duration']))))
 
             return result

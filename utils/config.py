@@ -10,7 +10,11 @@
 DEFAULT_CONFIG = {
     'debug': False,
     'encrypt_token': True,
-    'token': 'ODAxMDc1NDc5Mjg5MjY2MTk3.YAbZrQ.SfcU11qCo7SmHko-g0zkuChGKwk'
+    'token': 'ODAxMDc1NDc5Mjg5MjY2MTk3.YAbZrQ.SfcU11qCo7SmHko-g0zkuChGKwk',
+    'YT_Music': {
+        'max_queue_size': 20,
+        'quality': 'worst'
+    }
 }
 
 class Config(dict):

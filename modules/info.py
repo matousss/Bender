@@ -8,6 +8,7 @@ from utils.message_handler import get_text
 from utils.utils import bender_module
 
 
+
 @bender_module
 class Info(Cog):
     def __init__(self, bot):
@@ -22,17 +23,17 @@ class Info(Cog):
     @command(name="ping")
     async def ping(self, ctx):
         # print("<INFO> ping: "+str(float(bot.latency)*1000).split(".")[0] +"ms")
-        await ctx.send(f"Ping: ``{str(round(float(ctx.BOT.latency) * 1000))}ms``")
+        await ctx.send(f"{get_text('ping')}: ``{str(round(float(ctx.BOT.latency) * 1000))}ms``")
 
-    @command(name="suicide")
-    @is_owner()
-    async def suicide(self, ctx):
-        get_event_loop().stop()
-        pass
-
-    @command(name="deleteme", aliases=['dem'])
-    @guild_only()
-    async def deleteme(self, ctx, args):
-        await ctx.message.delete()
-        await ctx.send(get_text("%s smazal zprávu") % ctx.author.mention)
+    # @command(name="suicide")
+    # @is_owner()
+    # async def suicide(self, ctx):
+    #     get_event_loop().stop()
+    #     pass
+    #
+    # @command(name="deleteme", aliases=['dem'])
+    # @guild_only()
+    # async def deleteme(self, ctx, args):
+    #     await ctx.message.delete()
+    #     await ctx.send(get_text("%s smazal zprávu") % ctx.author.mention)
     pass

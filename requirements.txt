@@ -1,4 +1,4 @@
-googletrans==3.0.0
+googletrans==4.0.0rc1
 youtube_dl==2021.4.7
 discord.py==1.7.1
 PySimpleGUI==4.39.1

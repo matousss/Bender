@@ -62,8 +62,8 @@ class Moderation(Cog):
                     try:
                         await user.move_to(None)
                         kicked += 1
-                    except Exception as e:
-                        raise e
+                    except:
+                        raise
 
         else:
             if destination.members:
@@ -71,8 +71,8 @@ class Moderation(Cog):
                     try:
                         await user.move_to(None)
                         kicked += 1
-                    except Exception as e:
-                        raise e
+                    except:
+                        raise 
             else:
                 await ctx.send("empty_channel")
                 return
