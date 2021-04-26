@@ -8,7 +8,9 @@ from typing import Coroutine, Union
 from discord import VoiceClient
 from youtube_dl import YoutubeDL
 
+from utils.lib import Checks
 from utils.queue import IndexAsyncQueue as Queue
+from utils.utils import BenderModuleError
 from . import settings
 from .song import *
 

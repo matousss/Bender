@@ -75,3 +75,6 @@ def get_global_variable(key):
         return global_variables[key]
     except:
         raise
+
+
+

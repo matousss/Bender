@@ -19,7 +19,8 @@ from utils.utils import prefix as _prefix, set_global_variable, default_prefix
 # todo handle all exceptions
 
 
-# todo relative imports
+# todo check integrity
+# todo text translations
 # todo turn to app
 
 # logger
@@ -64,12 +65,13 @@ async def on_command(command):
 @BOT.event
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
-        await ctx.send(get_text("command_not_found_error"))
+        #await ctx.send(get_text("command_not_found_error"))
+        return
     elif isinstance(error, discord.ext.commands.errors.NotOwner):
-        await ctx.send(get_text("error_not_owner %s") % ctx.author.mention)
+        await ctx.send(get_text("%s error_not_owner") % ctx.author.mention)
     elif isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
         # await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
-        await ctx.send(get_text("on_cooldown_error") + " ``" + str(int(error.cooldown.per)) + "s``!")
+        await ctx.send(get_text("%s on_cooldown_error") % f" ``{str(int(error.cooldown.per))}s``")
     elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
         await ctx.send(get_text("missing_parameters_error"))
     elif isinstance(error, discord.ext.commands.NoPrivateMessage):

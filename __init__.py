@@ -1,2 +1,3 @@
-__version__ = "0.13.0pa"
+__version__ = '0.13.1pa'
+__name__ = 'Bender'
 

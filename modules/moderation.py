@@ -1,7 +1,7 @@
 import typing
 
-from discord.ext.commands import Cog, command, Context, group
-
+from discord.ext.commands import Cog, command, Context, group, Greedy, guild_only
+from discord import Member
 
 from utils import utils as butils
 
@@ -10,6 +10,7 @@ __all__ = ['Moderation']
 from utils.utils import bender_module
 from utils.message_handler import get_text
 
+#todo check user permissions
 
 @bender_module
 class Moderation(Cog):
@@ -32,52 +33,59 @@ class Moderation(Cog):
         return False
 
     @group(name="kick", aliases=["k"])
-    async def kick(self, ctx: Context):
+    @guild_only()
+    async def kick(self, ctx: Context,*, destination: typing.Optional[str] = None):
         if ctx.invoked_subcommand is None:
-            print(ctx.message.mentions)
-            await ctx.invoke(self.all)
+            await ctx.invoke(self.all, destination = destination)
         pass
 
 
     #todo https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html#greedy
     @kick.command(aliases=['a'])
     async def all(self, ctx: Context, *, destination: typing.Optional[str] = None):
+        # if destination:
+        #     if '<@' in destination:
+        #         destination = destination.split('<@', 1)[0]
+        #     destination = butils.get_channel(ctx, destination.lstrip())
+        # else:
+        #     if ctx.author.voice and ctx.author.voice.channel:
+        #         destination = ctx.author.voice.channel
+        #
+        # if not destination:
+        #     await ctx.send((get_text("no_channel_error")), reference=ctx.message, mention_author=False)
+        #
+        # return
+        #
+        # kicked = 0
+        # if ctx.message.mentions:
+        #     for user in ctx.message.mentions:
+        #         if user.voice and user.voice.channel and user.voice.channel.id == destination.id:
+        #             try:
+        #                 await user.move_to(None)
+        #                 kicked += 1
+        #             except:
+        #                 raise
+        #
+        # else:
+        #     if destination.members:
+        #         for user in destination.members:
+        #             try:
+        #                 await user.move_to(None)
+        #                 kicked += 1
+        #             except:
+        #                 raise
+        #     else:
+        #         await ctx.send("empty_channel")
+        #         return
+        #
+        # await ctx.send(f"{get_text('kicked')}: {kicked}")
         if destination:
-            if '<@' in destination:
-                destination = destination.split('<@', 1)[0]
-            destination = butils.get_channel(ctx, destination.lstrip())
+            destination = butils.get_channel(destination)
         else:
-            if ctx.author.voice and ctx.author.voice.channel:
-                destination = ctx.author.voice.channel
+            destination = ctx.author.voice.channel if (ctx.author.voice and ctx.author.voice.channel) else None
 
         if not destination:
-            await ctx.send((get_text("no_channel_error")), reference=ctx.message, mention_author=False)
-
-        return
-
-        kicked = 0
-        if ctx.message.mentions:
-            for user in ctx.message.mentions:
-                if user.voice and user.voice.channel and user.voice.channel.id == destination.id:
-                    try:
-                        await user.move_to(None)
-                        kicked += 1
-                    except:
-                        raise
-
-        else:
-            if destination.members:
-                for user in destination.members:
-                    try:
-                        await user.move_to(None)
-                        kicked += 1
-                    except:
-                        raise 
-            else:
-                await ctx.send("empty_channel")
-                return
-
-        await ctx.send(f"{get_text('kicked')}: {kicked}")
+            pass
 
     @command(name="move", aliases=["m", "mv"])
     async def move(self, ctx, option: str = None, arg_source: typing.Optional[str] = "",
