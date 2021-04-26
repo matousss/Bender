@@ -1,7 +1,7 @@
 import typing
 
-from discord.ext.commands import Cog, command, Context, group, Greedy, guild_only
-from discord import Member
+from discord import VoiceChannel
+from discord.ext.commands import Cog, command, Context, group, guild_only
 
 from utils import utils as butils
 
@@ -10,18 +10,15 @@ __all__ = ['Moderation']
 from utils.utils import bender_module
 from utils.message_handler import get_text
 
-#todo check user permissions
+
+# todo check user permissions
 
 @bender_module
 class Moderation(Cog):
 
-
     def __init__(self, bot):
         self.bot = bot
         print(f"Initialized {str(__name__)}")
-
-
-
 
     @staticmethod
     def have_match(input_list, what):
@@ -34,15 +31,82 @@ class Moderation(Cog):
 
     @group(name="kick", aliases=["k"])
     @guild_only()
-    async def kick(self, ctx: Context,*, destination: typing.Optional[str] = None):
+    async def kick(self, ctx: Context):
         if ctx.invoked_subcommand is None:
-            await ctx.invoke(self.all, destination = destination)
+            await ctx.invoke(self.all)
         pass
 
+    @staticmethod
+    def convert_kick_args(ctx, args):
+        print(ctx.message.mentions)
+        # if args:
+        #
+        #     if '<@' in args:
+        #         args = args.split('<@', 1)
+        #         if len(args) > 1:
+        #             destination: str = args[0]
+        #             args = "".join(args[1].replace('>', '').split()).split('<@')
+        #         else:
+        #             destination: str = ""
+        #             args = "".join(args[0].replace('>', '').split()).split('<@')
+        #     else:
+        #         destination = args
+        #         args = None
+        #
+        #     print(args)
+        #
+        #     if not destination.isspace() and len(destination) > 0:
+        #         destination = butils.get_channel(ctx, destination)
+        #     else:
+        #         destination: VoiceChannel = ctx.author.voice.channel if (
+        #                 ctx.author.voice and ctx.author.voice.channel) else None
+        # else:
+        #     destination: VoiceChannel = ctx.author.voice.channel if (
+        #             ctx.author.voice and ctx.author.voice.channel) else None
+        if args:
 
-    #todo https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html#greedy
+            if '<@' in args:
+                args = args.split('<@', 1)
+                if len(args) > 1:
+                    destination: str = args[0].strip()
+                else:
+                    destination: str = ""
+            else:
+                destination = args
+                args = None
+
+
+
+            if not destination.isspace() and len(destination) > 0:
+                destination = butils.get_channel(ctx, destination)
+            else:
+                destination: VoiceChannel = ctx.author.voice.channel if (
+                        ctx.author.voice and ctx.author.voice.channel) else None
+        else:
+            destination: VoiceChannel = ctx.author.voice.channel if (
+                    ctx.author.voice and ctx.author.voice.channel) else None
+        args = []
+        for m in ctx.message.mentions:
+            args.append(m.id)
+
+        return destination, args
+
+    @staticmethod
+    async def kick_checks(ctx: Context, destination):
+        if not destination:
+            await ctx.send(get_text("not_channel_error"))
+            return False
+        if not destination.permissions_for(ctx.me).move_members:
+            await ctx.send(get_text("bot_missing_permissions_error"))
+            return False
+        if len(destination.members) == 0:
+            await ctx.send(get_text("empty_channel_error"))
+            return False
+        return True
+
+    # todo https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html
     @kick.command(aliases=['a'])
-    async def all(self, ctx: Context, *, destination: typing.Optional[str] = None):
+    async def all(self, ctx: Context, *, args: typing.Optional[str] = None):
         # if destination:
         #     if '<@' in destination:
         #         destination = destination.split('<@', 1)[0]
@@ -79,14 +143,79 @@ class Moderation(Cog):
         #         return
         #
         # await ctx.send(f"{get_text('kicked')}: {kicked}")
-        if destination:
-            destination = butils.get_channel(destination)
+        print(args)
+        destination, args = Moderation.convert_kick_args(ctx, args)
+        print(args)
+        if not await Moderation.kick_checks(ctx, destination):
+            return
+
+        if destination.permissions_for(ctx.author).move_members:
+            to_kick = len(args) if args else len(destination.members)
+            kicked = 0
+            if args and len(args) > 0:
+                for member in destination.members:
+                    for m in args:
+                        if str(m) == str(member.id):
+                            try:
+                                await member.move_to(None)
+                                kicked += 1
+                            except:
+                                pass
+                            args.remove(m)
+            else:
+                marked = destination.members.copy()
+                for m in marked:
+                    try:
+                        await m.move_to(None)
+                        kicked += 1
+                    except:
+                        raise
+
+            await ctx.send(get_text("%s kicked") % f"{kicked}/{to_kick}")
+
         else:
-            destination = ctx.author.voice.channel if (ctx.author.voice and ctx.author.voice.channel) else None
+            await ctx.send("user_missing_permissions_error")
+            return
 
-        if not destination:
-            pass
 
+    @kick.command(aliases=['o'])
+    async def others(self, ctx: Context, *, args: typing.Optional[str] = None):
+        destination, args = Moderation.convert_kick_args(ctx, args)
+
+        if not await Moderation.kick_checks(ctx, destination):
+            return
+        if destination.permissions_for(ctx.author).move_members:
+            to_kick = ((len(args) if args else (len(destination.members)) -
+                                               (1 if ctx.author.voice.channel.id == destination.id else 0)))
+            kicked = 0
+            if args and len(args) > 0:
+                for member in destination.members:
+                    for m in args:
+                        if str(m) == str(member.id):
+                            break
+                    else:
+                        try:
+                            await member.move_to(None)
+                            kicked += 1
+                        except:
+                            pass
+
+            else:
+                for m in destination.members:
+                    if m.id != ctx.author.id:
+                        try:
+                            await m.move_to(None)
+                            kicked += 1
+                        except:
+                            raise
+
+            await ctx.send(get_text("%s kicked") % f"{kicked}/{to_kick}")
+
+        else:
+            await ctx.send("user_missing_permissions_error")
+            return
+
+    # todo rewrite
     @command(name="move", aliases=["m", "mv"])
     async def move(self, ctx, option: str = None, arg_source: typing.Optional[str] = "",
                    arg_destination: typing.Optional[str] = "", *, users: typing.Optional[str] = ""):

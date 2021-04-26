@@ -9,9 +9,8 @@ import typing
 from asyncio import QueueEmpty
 from asyncio.queues import QueueFull
 
-from discord import Embed, ClientException, VoiceClient
+from discord import Embed, ClientException
 from discord.ext import commands
-from discord.ext.commands import CommandError
 
 from global_settings import MAX_SONG_DURATION
 from modules.music.music import MusicPlayer, MusicSearcher
@@ -36,16 +35,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         self.join = None
 
         print(f"Initialized {str(__name__)}")
-
-    # @commands.
-    # def delete_player(self, key: str):
-
-    async def cog_command_error(self, ctx, error):
-        if isinstance(error, NotPlayingError):
-            await ctx.send(get_text('not_playing_error'))
-
-        print(error)
-        raise error
 
     def is_playing(self, ctx: commands.Context):
         try:
@@ -221,7 +210,8 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                 player.lock.release()
                 await ctx.send(f"{get_text('skip')} : {qsize - player.qsize()}")
         else:
-            raise NotPlayingError()
+            await ctx.send("not_playing_error")
+            return
 
     # todo remove from queue command
     # todo loop command
@@ -243,77 +233,25 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     @commands.command(name='nowplaying', aliases=['np'])
     @commands.guild_only()
     async def nowplaying(self, ctx):
-        if ctx.voice_client and ctx.voice_client.is_playing():
-            # try:
-            #     player = self.players[str(ctx.guild.id)]
-            # except KeyError:
-            #     traceback.print_exc()
-            #     ctx.send(get_text("unknown_error"))
-            #     return
-            if self.is_playing():
-                player = self.players[str(ctx.guild.id)]
-            else:
-                raise NotPlayingError()
-                return
-            if player.now_playing:
-                await ctx.send(f"{get_text('now_playing')} {YoutubeMusic.format_song_details(player.now_playing)}")
-                return
-
-        await ctx.send(get_text("error_not_playing"))
+        if self.is_playing(ctx):
+            player = self.players[str(ctx.guild.id)]
+        else:
+            await ctx.send("not_playing_error")
+            return
+        if player.now_playing:
+            await ctx.send(f"{get_text('now_playing')} {YoutubeMusic.format_song_details(player.now_playing)}")
+            return
 
     @commands.command(name='queue', aliases=['q'])
     @commands.guild_only()
     async def queue(self, ctx, page: typing.Optional[int] = 1):
-        try:
+        if self.is_playing(ctx):
             player = self.players[str(ctx.guild.id)]
-
-        except KeyError:
-            await ctx.send(get_text("not_playing_error"))
+        else:
+            await ctx.send("not_playing_error")
             return
 
         queue = await player.current_queue()
-        # embeds = [Embed(color=Color.red())]
-        # embed = embeds[0]
-        # embeds_count = 0
-        # if player.now_playing:
-        #     embed.add_field(name=get_text("now_playing"),
-        #                     value=YoutubeMusic.format_song_details(player.now_playing),
-        #                     inline=False)
-        #
-        # index = 0
-        # # sb = "Wow, such empty"
-        # sb = get_text('empty')
-        # if len(queue) > 0:
-        #     index += 1
-        #     first = f"{index}. {YoutubeMusic.format_song_details(queue.popleft())}"
-        # else:
-        #     first = None
-        #
-        # if first:
-        #     sb = first
-        #
-        # for song in queue:
-        #     index += 1
-        #     embed.add_field(name="\u200b", value=f"\n{index}. {YoutubeMusic.format_song_details(song)}",
-        #                     inline=False)
-        #
-        #     if index % 20 == 0:
-        #         embeds.append(Embed(color=Color.red()))
-        #         embeds_count += 1
-        #         embed = embeds[embeds_count]
-        #
-        #     if index == 20:
-        #         embed.insert_field_at(index=1,
-        #                               name=f"{get_text('current_queue')} [{(len(queue) + 1)}] {get_text('song')}:",
-        #                               value=sb)
-        #
-        # if index < 20:
-        #     embed.insert_field_at(index=1, name=f"{get_text('in_queue (%s)')}"
-        #                                         % (len(queue) + (1 if first else 0)),
-        #                           value=sb)
-        #
-        # for e in embeds:
-        #     await ctx.send(embed=e)
         pages = int(math.ceil(len(queue) / float(PAGE_SIZE)))
         pages = 0 if pages == 0 else pages
         if page != 1 and (page > pages or page < 1):
@@ -335,28 +273,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             embed.add_field(name=get_text("now_playing"),
                             value=YoutubeMusic.format_song_details(player.now_playing),
                             inline=False)
-        #     if len(page_elements) > 0:
-        #         index += 1
-        #         e = page_elements.pop(0)
-        #         desc = YoutubeMusic.format_song_details(e, True)
-        #         embed.add_field(name=f"{get_text('in_queue')} ({len(queue)})",
-        #                         value=f"{index}. [{desc[0]}]"
-        #                               f"(https://www.youtube.com/watch?v{e.details['id']}) "
-        #                               f"``{desc[1]}``",
-        #                         inline=False, )
-        #
-        #     else:
-        #         embed.add_field(name=f"{get_text('in_queue')} ({len(queue)})",
-        #                         value=get_text("emptiness"),
-        #                         inline=False)
-        #
-        # for e in page_elements:
-        #     index += 1
-        #     desc = YoutubeMusic.format_song_details(e, True)
-        #     embed.add_field(name="\u200b", value=f"{index}. [{desc[0]}]"
-        #                                          f"(https://www.youtube.com/watch?v{e.details['id']}) "
-        #                                          f"``{desc[1]}``",
-        #                     inline=False, )
         sb = ""
 
         if len(page_elements) > 0:
@@ -386,16 +302,8 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         if self.is_playing(ctx):
             pass
         else:
-            raise NotPlayingError()
+            await ctx.send("not_playing_error")
+            return
         pass
 
-
 # todo progress in np command
-# todo error handling with raise command error
-
-
-class NotPlayingError(CommandError):
-    def __init__(self, *args):
-        super().__init__(*args)
-
-    pass
