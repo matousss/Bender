@@ -5,10 +5,10 @@ import datetime
 import functools
 import logging
 import math
+import time
 import typing
 from asyncio import QueueEmpty
 from asyncio.queues import QueueFull
-import time
 from warnings import warn
 
 from discord import Embed, ClientException
@@ -21,7 +21,6 @@ from modules.music.song import Song
 from utils.lib import Checks
 from utils.message_handler import get_text
 from utils.utils import bender_module, BenderModuleError
-
 
 __all__ = ['YoutubeMusic']
 logger = logging.getLogger('bender')
@@ -52,29 +51,33 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     @tasks.loop(minutes=1)
     async def garbage_collector(self):
         t = int(time.time())
-        print(self.players)
         keys = list(self.players.keys())
         for key in keys:
             player = self.players[key]
-            print(player.last_used)
-            print(t - player.last_used)
             if player.voice_client.is_playing():
                 player.last_used = int(time.time())
-            if t - player.last_used > 120:
+            if (not player.voice_client.is_paused() and t - player.last_used > 120) or t - player.last_used > 300:
                 if player.voice_client.is_connected():
-                    await player.voice_client.channel.disconnect()
+                    await player.voice_client.disconnect()
                 self.players.pop(key)
 
         del keys
 
-    def is_playing(self, ctx: commands.Context):
+    def is_player(self, ctx: commands.Context) -> bool:
         try:
             player = self.players[str(ctx.guild.id)]
         except KeyError:
             return False
-        return ctx.voice_client.is_playing()
+        return True
 
+    def is_connected(self, ctx: commands.Context) -> bool:
+        return self.is_player(ctx) and ctx.voice_client.is_connected()
 
+    def is_playing(self, ctx: commands.Context) -> bool:
+        return self.is_player(ctx) and ctx.voice_client.is_playing()
+
+    def is_paused(self, ctx: commands.Context) -> bool:
+        return self.is_player(ctx) and ctx.voice_client.is_paused()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -92,14 +95,15 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     @commands.check(Checks.can_join_speak)
     @commands.guild_only()
     @commands.cooldown(1, 3, type=commands.BucketType.guild)
-    async def play(self, ctx, *, what: str):
-        print("started")
+    async def play(self, ctx: commands.Context, *, what: str):
         # check if in voice channel, connect to some if not
         if not ctx.voice_client or not ctx.voice_client.is_connected():
             if ctx.author.voice and ctx.author.voice.channel:
-
-                await ctx.invoke(self.join, channel=ctx.author.voice.channel)
-
+                try:
+                    await asyncio.wait_for(ctx.invoke(self.join, channel=ctx.author.voice.channel), timeout=10)
+                except asyncio.TimeoutError:
+                    await ctx.send(get_text("unknow_join_error"))
+                    return
             elif ctx.voice_client and not ctx.voice_client.is_connected():
                 await ctx.send(get_text("no_channel_error"))
                 return
@@ -113,7 +117,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         else:
             self.players[str(ctx.guild.id)] = MusicPlayer(ctx.voice_client)
             player = self.players[str(ctx.guild.id)]
-        # todo send embed messages
 
         async with player.lock:
             if ctx.voice_client and ctx.voice_client.is_connected:
@@ -145,12 +148,12 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
             if isinstance(song, Song):
                 if check_too_long(song):
-                    await ctx.send(f"{get_text('error_too_long')}  {YoutubeMusic.format_song_details(song)}")
+                    await ctx.send(get_text('%s error_too_long') % YoutubeMusic.format_song_details(song))
                     return
             elif isinstance(song, type([])):
                 for s in song:
                     if check_too_long(s):
-                        await ctx.send(f"{get_text('error_too_long')}  {YoutubeMusic.format_song_details(s)}")
+                        await ctx.send(get_text('%s error_too_long') % YoutubeMusic.format_song_details(s))
                         song.remove(s)
 
             else:
@@ -159,9 +162,10 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
             async def start_playing():
                 # in case of unexpected disconnect
-                if not ctx.voice_client or not ctx.voice_client.is_connected() and ctx.author.voice.channel:
-                    await ctx.invoke(self.join, ctx, channel=ctx.author.voice.channel)
-                    if not ctx.voice_client.is_connected():
+                if (not ctx.voice_client or not ctx.voice_client.is_connected()) and ctx.author.voice.channel:
+                    try:
+                        await asyncio.wait_for(ctx.invoke(self.join, channel=ctx.author.voice.channel), timeout=10)
+                    except asyncio.TimeoutError:
                         player.idle = True
                         await ctx.send(get_text('play_error'))
                         return
@@ -169,35 +173,41 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                 if not ctx.voice_client.is_playing():
                     await player.play()
 
+            embed = Embed(color=0xff0000)
             if isinstance(song, list):
 
                 count = len(song)
                 first = song.pop(0)
 
                 try:
-                    player.add_song_nowait(first)
+                    player.add_song(first)
                 except QueueFull:
-                    await ctx.send(f"{get_text('queue_full')} (0/{len(song) + 1})")
+                    await ctx.send(get_text('%s queue_full') % f"(0 / {(len(song) + 1)}")
                     return
                 await start_playing()
 
                 not_added = await player.add_songs(song)
                 if len(not_added) > 0:
-                    # todo napsat kolik bylo přidáno a kolik ne (field v embed)
-                    await ctx.send(f"{get_text('queue_full')} ({len(song)}/{len(not_added)})")
+                    await ctx.send(get_text('%s queue_full') % f"{len(song)}/{len(not_added)}")
                     return
-                await ctx.send(f"{get_text('added_to_queue')}: {count - len(song)}")  # todo embed
+                await ctx.send(get_text('%s added_to_queue') % str(count - len(song)))
 
             else:
                 try:
-                    player.add_song_nowait(song)
+                    player.add_song(song)
                 except QueueFull:
                     await ctx.send(get_text("queue_full"))
                     return
-                await ctx.send(get_text("added_to_queue"))  # todo embed
-                await start_playing()
 
-        print("ended")
+                embed.set_author(name=song.details['uploader'] if song.details['uploader'] else 'NaN')
+                embed.add_field(name=song.details['title'] if song.details['title'] else 'NaN',
+                                value=f"https://www.youtube.com/watch?v={song.details['id']}\n{get_text('duration')} ["
+                                      + str((datetime.timedelta(seconds=song.details['duration'])) if
+                                            song.details['duration'] > 0 else '<NaN>') + "]", inline=False)
+
+                await ctx.send(embed=embed)
+
+                await start_playing()
 
     @commands.command(name='skip', aliases=['s'])
     @commands.guild_only()
@@ -249,9 +259,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             return
 
     # todo remove from queue command
-    # todo loop command
-    # todo pause, resume cmd
-
 
     @staticmethod
     def format_song_details(song: Song, return_tuple: bool = False) -> typing.Union[tuple[str, str], str]:
@@ -266,7 +273,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         return f"{title if title else '<NaN>'}" \
                f" [{str(datetime.timedelta(seconds=duration)) if duration > 0 else '<NaN>'}]"
 
-    #todo embed, thumbnail, link
+
     @commands.command(name='nowplaying', aliases=['np'])
     @commands.guild_only()
     async def nowplaying(self, ctx):
@@ -276,8 +283,20 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             await ctx.send("not_playing_error")
             return
         if player.now_playing:
-            await ctx.send(f"{get_text('now_playing')} {YoutubeMusic.format_song_details(player.now_playing)}")
+            song = player.now_playing
+            embed = Embed(color=0xff0000)
+            embed.set_author(name=song.details['uploader'] if song.details['uploader'] else 'NaN')
+            if song.thumbnail and len(song.thumbnail) > 0:
+                embed.set_thumbnail(url=song.thumbnail[1]) if len(song.thumbnail) >= 1 else song.thumbnail[0]
+            embed.add_field(name=song.details['title'] if song.details['title'] else 'NaN',
+                            value=f"https://www.youtube.com/watch?v={song.details['id']}\n["
+                                  + str((datetime.timedelta(seconds=song.details['duration'])) if
+                                        song.details['duration'] > 0 else '<NaN>') + "]", inline=False)
+
+            await ctx.send(embed=embed)
             return
+        else:
+            await ctx.send(get_text("unknow_playing_error"))
 
     @commands.command(name='queue', aliases=['q'])
     @commands.guild_only()
@@ -290,7 +309,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
         queue = player.current_queue()
         pages = int(math.ceil(len(queue) / float(PAGE_SIZE)))
-        pages = 0 if pages == 0 else pages
+        pages = 1 if pages == 0 else pages
         if page != 1 and (page > pages or page < 1):
             await ctx.send(get_text("no_page_error") + f" ``{page}``")
             return
@@ -307,9 +326,14 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         page_elements = list(queue)[index:n]
 
         if page == 1:
+            now_playing = player.now_playing
+            converted = YoutubeMusic.format_song_details(now_playing, True)
+
+            if now_playing.thumbnail and len(now_playing.thumbnail) > 0:
+                embed.set_thumbnail(url=now_playing.thumbnail[1]) if len(now_playing.thumbnail) >= 1 else now_playing.thumbnail[0]
             embed.add_field(name=get_text("now_playing"),
-                            value=YoutubeMusic.format_song_details(player.now_playing),
-                            inline=False)
+                            value=f"[{converted[0]}](https://www.youtube.com/watch?v"
+                                  f"{now_playing.details['id']}) {converted[1]}\n\n\n", inline=False)
         sb = ""
 
         if len(page_elements) > 0:
@@ -318,13 +342,13 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                 converted = YoutubeMusic.format_song_details(e, True)
 
                 sb += (
-                    f"{index}. [{converted[0]}](https://www.youtube.com/watch?v{e.details['id']}) ``{converted[1]}``\n")
+                    f"{index}. [{converted[0]}](https://www.youtube.com/watch?v{e.details['id']}) {converted[1]}\n")
 
         else:
             sb = get_text('emptiness')
-
-        sb += get_text('%d queue_more') % (len(queue) - index)
-        embed.add_field(name=f"{get_text('in_queue')} ({len(queue)})",
+        if len(queue) > index:
+            sb += get_text('%d queue_more') % (len(queue) - index)
+        embed.add_field(name=f"{get_text('%d in_queue')}" % len(queue),
                         value=sb,
                         inline=False)
 
@@ -351,7 +375,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
     @commands.command(name='resume')
     async def resume(self, ctx: commands.Context):
-        if self.is_playing(ctx):
+        if self.is_paused(ctx):
             player = self.players[str(ctx.guild.id)]
             try:
                 player.resume()
@@ -364,3 +388,14 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             return
         pass
 
+    @commands.command(name='loop')
+    async def loop(self, ctx: commands.Context):
+        if self.is_player(ctx) and ctx.voice_client.is_connected():
+            player = self.players[str(ctx.guild.id)]
+            player.looped = False if player.looped else True
+            if player.looped:
+                await ctx.send(get_text("loop_on"))
+            else:
+                await ctx.send(get_text("loop_off"))
+        else:
+            await ctx.send(get_text("not_playing"))

@@ -5,7 +5,7 @@ from warnings import warn
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import CommandNotFound
+from discord.ext.commands import CommandNotFound, Cog
 
 from __init__ import __version__
 # noinspection PyUnresolvedReferences
@@ -37,7 +37,7 @@ BOT = commands.Bot(command_prefix=_prefix, intents=intents, owner_id=49421666566
 
 
 # todo help command
-
+# todo descriptions
 
 # events
 @BOT.event
@@ -67,6 +67,10 @@ async def on_command(command):
 
 @BOT.event
 async def on_command_error(ctx, error):
+    cog = ctx.cog
+    if cog and Cog._get_overridden_method(cog.cog_command_error) is not None:
+        return
+
     if isinstance(error, CommandNotFound):
         # await ctx.send(get_text("command_not_found_error"))
         return
@@ -83,7 +87,8 @@ async def on_command_error(ctx, error):
         await ctx.send(get_text("missing_permissions"))
 
     else:
-        raise error
+        print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
 
 if __name__ == '__main__':

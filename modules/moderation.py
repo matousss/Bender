@@ -103,7 +103,7 @@ class Moderation(Cog):
             return False
         return True
 
-    # todo https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html
+
     @kick.command(aliases=['a'])
     async def all(self, ctx: Context, *, args: typing.Optional[str] = None):
         # if destination:

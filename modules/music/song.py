@@ -8,8 +8,8 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from discord.player import FFmpegPCMAudio
 from youtube_dl import YoutubeDL
 
-from .settings import YTDL_OPTIONS
 from .settings import FFMPEG_OPTIONS
+from .settings import YTDL_OPTIONS
 
 __all__ = ['Song', 'SongDetails']
 
@@ -17,17 +17,18 @@ __all__ = ['Song', 'SongDetails']
 class SongDetails(dict):
     """Object to store basic audio details"""
 
-    def __init__(self, id: str, title: str = None, duration: float = -1):
+    def __init__(self, id: str, title: str = None, duration: float = -1, uploader: str = None):
         self['id'] = id
         self['title'] = title
         self['duration'] = duration
+        self['uploader'] = uploader
         super().__init__()
 
 
 class Song(object):
     """Object representing youtube video"""
 
-    def __init__(self, details: SongDetails, thumbnail: str = None, source: FFmpegPCMAudio = None):
+    def __init__(self, details: SongDetails, thumbnail: list = None, source: FFmpegPCMAudio = None):
         """
         details - instance of SongDetails containing basic info about youtube video
         thumbnail - optional url for thumbnail image
@@ -55,15 +56,11 @@ class Song(object):
         """Prepare song for usage on discord but asyncio friendly"""
         extracted = await SongExtractor.extract_song(f"https://www.youtube.com/watch?v={self.details['id']}")
 
-
         self.source = FFmpegPCMAudio(extracted[0], **FFMPEG_OPTIONS)
         self.thumbnail = extracted[1]
-        print("song is ready to rock")
         return
+
     pass
-
-
-
 
 
 class SongExtractor:
@@ -81,10 +78,17 @@ class SongExtractor:
         """
         song = SongExtractor._youtube_dl.extract_info(url, download=False)
 
-        return song['formats'][0]['url'], song['thumbnails'][0]['url']
+        thumbnails = [None, None]
+        index = 0
+        for t in song['thumbnails'][:2]:
+            thumbnails[index]=t['url']
+            index+=1
+
+        return song['formats'][0]['url'], thumbnails
 
     @staticmethod
-    async def extract_song(url: str, loop: AbstractEventLoop = None, executor: Executor = ThreadPoolExecutor()) -> tuple[str, str]:
+    async def extract_song(url: str, loop: AbstractEventLoop = None, executor: Executor = ThreadPoolExecutor()) -> \
+    tuple[str, str]:
         """
         Execute SongExtractor.extract_song() with asyncio executor
         """

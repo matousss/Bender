@@ -2,13 +2,11 @@
 
 
 #todo load from file
-#todo proxy
+
 YTDL_OPTIONS = {
     'format': 'worstaudio/worst',
     'extractaudio': True,
     'audioformat': 'mp3',
-    # 'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    # 'restrictfilenames': True,
     'noplaylist': False,
     'nocheckcertificate': True,
     'ignoreerrors': False,
@@ -17,7 +15,7 @@ YTDL_OPTIONS = {
     # 'default_search': 'auto',
     'source_address': '0.0.0.0',
     'writesubtitles': False,
-    # 'geo_bypass': True,
+    'geo_bypass': True,
     'quiet': True,
     'extract_flat': True,
     'sleep_interval': 15,

@@ -1,239 +1,18 @@
 from __future__ import annotations
 
-import traceback
-from asyncio import get_running_loop, run_coroutine_threadsafe, wait_for, Lock, TimeoutError as AsyncioTimeoutError
-from asyncio.queues import QueueFull
 import time
-from typing import Coroutine, Union
+from asyncio import get_running_loop, run_coroutine_threadsafe, wait_for, Lock
+from collections import deque
+from typing import Union
 
 from discord import VoiceClient
-from youtube_dl import YoutubeDL
+from youtube_dl import YoutubeDL, DownloadError
 
-from .queue import IndexAsyncQueue as Queue
 from . import settings
 from .song import *
 
-__all__ = ['MusicPlayer', 'MusicSearcher']
-
-
-class MusicPlayer(object):
-    """
-    Object representing music player
-
-    Attributes
-    -----------
-    voice_client: :class: discord.voice_client
-        Voice client of bot in chosen guild
-
-    _queue: :class: asyncio.queues.Queue
-        Queue for :class: Song object which will be played
-
-    now_playing: :class: Song
-        Holds now playing song
-    """
-
-    def __init__(self, voice_client: VoiceClient, queue: Queue = Queue()):
-        if not isinstance(voice_client, VoiceClient):
-            raise ValueError(f"voice_client can't be {voice_client}")
-        if not isinstance(queue, Queue):
-            raise ValueError(f"queue can't be {queue}")
-        self.voice_client = voice_client
-        self._queue = queue
-        self.now_playing = None
-        self.lock = Lock()
-        self.searcher = MusicSearcher()
-        self.last_used = int(time.time())
-        pass
-
-    def __len__(self):
-        """
-        Returns
-        --------
-        int
-            Number of items in queue
-        """
-        return self._queue.qsize()
-
-    def __getattribute__(self, item):
-        method = object.__getattribute__(self, item)
-        if callable(method):
-            self.last_used = int(time.time())
-
-        return method
-
-
-
-    def add_song_nowait(self, item: Song):
-        """Add song to player queue
-        Raises
-        -------
-        QueueFull
-            Queue of player is full"""
-        if not isinstance(item, Song):
-            raise ValueError(f"Accept only {Song.__name__} and not {item.__class__.__name__}")
-        self._queue.put_nowait(item)
-
-    async def add_songs(self, songs: list):
-        """Add all songs from array to player queue
-
-        Returns
-        --------
-        :class: Song
-            List of :class: Song which were not added to queue because of QueueFull exception
-
-        Raises
-        -------
-        QueueEmpty
-            Queue of player is empty
-
-        ValueError
-            Variable in songs isn't :class: Song
-        """
-
-        try:
-            while len(songs) > 0:
-                song = songs.pop(0)
-                if isinstance(song, Song):
-                    try:
-                        self.add_song_nowait(song)
-                        # taks = self.add_song_nowait(song)
-                        # await wait_for(task, timeout=None)
-
-                    except QueueFull:
-                        songs.insert(0, song)
-                        raise
-                else:
-                    raise ValueError(f"Accept only {Song.__name__} and not {song.__class__.__name__}")
-
-        finally:
-            return songs
-
-    def get_song_nowait(self) -> Song:
-        return self._queue.get_nowait()
-
-    async def get_song(self) -> Coroutine:
-        return self._queue.get()
-
-    async def get_now_playing(self) -> Song:
-        """Returns now_playing
-
-        Returns
-        --------
-        :class: Song
-            Object of now playing audio
-
-        None
-            Returned when nothing is playing
-        """
-        return self.now_playing
-
-    async def get_next(self, timeout: float = None) -> Union[Song, None]:
-        """
-        Get song from queue and prepare song after
-
-        Returns
-        --------
-        :class: Song
-            Next song in queue
-
-        None
-            None is returned when queue is empty and timeout occurred
-        """
-        try:
-            next_song = await wait_for(await self.get_song(), timeout=timeout)
-        except AsyncioTimeoutError:
-            return None
-        if not self._queue.empty():
-            after = self._queue.get_by_index(0)
-            await after.prepare_to_go()
-        return next_song
-
-    async def get_next_nowait(self) -> Union[Song, None]:
-        """
-        Get song from queue and prepare song after or raise QueueEmpty
-
-        Returns
-        --------
-        :class: Song
-            Next song in queue
-        """
-
-        next_song = await self.get_song_nowait()
-
-        try:
-            after = self._queue.get_by_index(0)
-            await after.prepare_to_go()
-
-        except IndexError:
-            pass
-
-        return next_song
-
-    async def play(self) -> None:
-        if not self.voice_client:
-            raise ValueError("voice_client can't be Null")
-        elif not self.voice_client.is_connected():
-            raise VoiceClientError("Not connected")
-        elif self.voice_client.is_playing():
-            raise AlreadyPlaying
-
-        loop = get_running_loop()
-
-        def restart_play(error):
-            # https://discordpy.readthedocs.io/en/stable/faq.html#how-do-i-pass-a-coroutine-to-the-player-s-after-function
-            if error:
-                print(error)
-            coro = self.play()
-            fut = run_coroutine_threadsafe(coro, loop)
-            try:
-                fut.result()
-            except TimeoutError:
-                # traceback.print_exc()
-
-                return
-            except VoiceClientError:
-                print("<INFO> Bot was kicked by user or lost connection to channel")
-
-        song = await self.get_next(timeout=30.0)
-        if not song:
-
-            print(f"{str(self)} is idle")
-
-            return
-
-        if not song.source:
-            await wait_for(song.prepare_to_go(), timeout=None)
-
-        self.voice_client.play(song.source, after=restart_play)
-
-        self.now_playing = song
-
-    def remove(self, count: int = 1):
-        for _ in range(count):
-            self._queue.get_nowait()
-
-    def queue_empty(self) -> bool:
-        return self._queue.empty()
-
-    def qsize(self):
-        return self._queue.qsize()
-
-    def current_queue(self) -> list:
-        return self._queue.get_current()
-
-    def pause(self):
-        if not self.voice_client.is_playing():
-            raise NotPlaying()
-        if self.voice_client.is_paused():
-            raise AlreadyPaused()
-
-        self.voice_client.pause()
-
-    def resume(self):
-        if not self.voice_client.is_paused():
-            raise NotPaused()
-
-        self.voice_client.resume()
+__all__ = ['MusicPlayer', 'MusicSearcher', 'NotPlaying', 'NotPaused', 'AlreadyPaused', 'AlreadyPlaying', 'NoSongToPlay',
+           'NoResult', 'QueueFull', 'QueueEmpty']
 
 
 class NotPlaying(Exception):
@@ -279,6 +58,222 @@ class NoResult(Exception):
     pass
 
 
+class QueueFull(Exception):
+    pass
+
+
+class QueueEmpty(Exception):
+    pass
+
+
+class MusicPlayer(object):
+    """
+    Object representing music player
+
+    Attributes
+    -----------
+    voice_client: :class: discord.voice_client
+        Voice client of bot in chosen guild
+
+    _queue: :class: asyncio.queues.Queue
+        Queue for :class: Song object which will be played
+
+    now_playing: :class: Song
+        Holds now playing song
+    """
+
+    def __init__(self, voice_client: VoiceClient, queue: deque = deque()):
+        if not isinstance(voice_client, VoiceClient):
+            raise ValueError(f"voice_client can't be {voice_client.__class__.__name__}")
+        if not isinstance(queue, deque):
+            raise ValueError(f"queue can't be {queue.__class__.__name__}")
+        self.voice_client = voice_client
+        self._queue = queue
+        self.now_playing = None
+        self.lock = Lock()
+        self.searcher = MusicSearcher()
+        self.last_used = int(time.time())
+        self.looped = False
+        pass
+
+    def __len__(self):
+        """
+        Returns
+        --------
+        int
+            Number of items in queue
+        """
+        return len(self._queue)
+
+    def __getattribute__(self, item):
+        method = object.__getattribute__(self, item)
+        if callable(method):
+            self.last_used = int(time.time())
+
+        return method
+
+    def add_song(self, item: Song):
+        """Add song to player queue
+        Raises
+        -------
+        QueueFull
+            Queue of player is full"""
+        if not isinstance(item, Song):
+            raise ValueError(f"Accept only {Song.__name__} and not {item.__class__.__name__}")
+        if self._queue.maxlen == len(self._queue):
+            raise QueueFull("Player queue is full")
+        self._queue.append(item)
+
+    async def add_songs(self, songs: list):
+        """Add all songs from array to player queue
+
+        Returns
+        --------
+        :class: Song
+            List of :class: Song which were not added to queue because of QueueFull exception
+
+        Raises
+        -------
+        QueueEmpty
+            Queue of player is empty
+
+        ValueError
+            Variable in songs isn't :class: Song
+        """
+
+        try:
+            while len(songs) > 0:
+                song = songs.pop(0)
+                if isinstance(song, Song):
+                    try:
+                        self.add_song(song)
+                        # taks = self.add_song_nowait(song)
+                        # await wait_for(task, timeout=None)
+
+                    except QueueFull:
+                        songs.insert(0, song)
+                        raise
+                else:
+                    raise ValueError(f"Accept only {Song.__name__} and not {song.__class__.__name__}")
+
+        finally:
+            return songs
+
+    def get_song(self) -> Song:
+        if len(self._queue) == 0:
+            raise QueueEmpty()
+        return self._queue.popleft()
+
+    async def get_now_playing(self) -> Song:
+        """Returns now_playing
+
+        Returns
+        --------
+        :class: Song
+            Object of now playing audio
+
+        None
+            Returned when nothing is playing
+        """
+        return self.now_playing
+
+    async def get_next(self) -> Union[Song, None]:
+        """
+        Get song from queue and if queue isn't empty prepare next song in queue
+
+        Returns
+        --------
+        :class: Song
+            Next song in queue
+
+        None
+            None is returned when queue is empty
+        """
+        try:
+            next_song = self.get_song()
+        except QueueEmpty:
+            return None
+        if len(self._queue) > 0:
+            after = self._queue[0]
+            await after.prepare_to_go()
+        return next_song
+
+    async def play(self) -> None:
+        if not self.voice_client:
+            raise ValueError("voice_client can't be Null")
+        elif not self.voice_client.is_connected():
+            raise VoiceClientError("Not connected")
+        elif self.voice_client.is_playing():
+            raise AlreadyPlaying
+
+        loop = get_running_loop()
+
+        def restart_play(error):
+            # https://discordpy.readthedocs.io/en/stable/faq.html#how-do-i-pass-a-coroutine-to-the-player-s-after-function
+            if self.looped:
+                self.add_song(song)
+            if error:
+                print(error)
+
+            fut = run_coroutine_threadsafe(self.play(), loop)
+            try:
+                fut.result()
+            except TimeoutError:
+                # traceback.print_exc()
+
+                return
+            except VoiceClientError:
+                print("<INFO> Bot was kicked by user or lost connection to channel")
+
+        song = await self.get_next()
+
+        if not song:
+            print(f"{str(self)} is idle")
+
+            return
+
+        if not song.source:
+            await wait_for(song.prepare_to_go(), timeout=None)
+        try:
+            self.voice_client.play(song.source, after=restart_play)
+        except:
+            await wait_for(song.prepare_to_go(), timeout=None)
+            try:
+                self.voice_client.play(song.source, after=restart_play)
+            except:
+                raise DownloadError()
+        self.now_playing = song
+
+    def remove(self, count: int = 1):
+        for _ in range(count):
+            self._queue.popleft()
+
+    # todo remove by index
+
+    def queue_empty(self) -> bool:
+        return len(self._queue) == 0
+
+    def qsize(self):
+        return len(self._queue)
+
+    def current_queue(self) -> list:
+        return list(self._queue)
+
+    def pause(self):
+        if not self.voice_client.is_playing():
+            raise NotPlaying()
+        if self.voice_client.is_paused():
+            raise AlreadyPaused()
+
+        self.voice_client.pause()
+
+    def resume(self):
+        if not self.voice_client.is_paused():
+            raise NotPaused()
+
+        self.voice_client.resume()
+
+
 class MusicSearcher(object):
     """
     Search audio on youtube using youtube-dl
@@ -287,11 +282,14 @@ class MusicSearcher(object):
     _youtube_dl = YoutubeDL(settings.YTDL_OPTIONS)
 
     @staticmethod
-    def search_song(text: str, retry: int = 2):
+    def search_song(text: str, retry: int = 2) -> Union[Song, list[Song]]:
         """
         Search for song or playlist from given url or keyword
         Returns one Song() or list of Song()
-        Raise NoResult() for no result
+        Raises
+        -------
+        NoResult()
+            for no result
         
         retry - How many should youtube_dl retry when first attempt fail 
         """
@@ -328,7 +326,8 @@ class MusicSearcher(object):
 
         if not result:
             raise NoResult(
-                "youtube_dl didn't returned any result\nthis error can be caused by connection problems or invalid url")
+                "youtube_dl didn't returned any result\nthis error can be caused by connection problems, "
+                "outdated youtube_dl or invalid url")
         if 'entries' in result:
             x = result
             result = []
@@ -337,7 +336,6 @@ class MusicSearcher(object):
                 result.append(Song(SongDetails(entry['id'], entry['title'], float(entry['duration']))))
 
             return result
-
-        return Song(SongDetails(result['id'], result['title'], result['duration']))
+        return Song(SongDetails(result['id'], result['title'], result['duration'], result['uploader']))
 
     pass
