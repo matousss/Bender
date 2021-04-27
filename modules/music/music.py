@@ -3,14 +3,13 @@ from __future__ import annotations
 import traceback
 from asyncio import get_running_loop, run_coroutine_threadsafe, wait_for, Lock, TimeoutError as AsyncioTimeoutError
 from asyncio.queues import QueueFull
+import time
 from typing import Coroutine, Union
 
 from discord import VoiceClient
 from youtube_dl import YoutubeDL
 
-from utils.lib import Checks
-from utils.queue import IndexAsyncQueue as Queue
-from utils.utils import BenderModuleError
+from .queue import IndexAsyncQueue as Queue
 from . import settings
 from .song import *
 
@@ -43,7 +42,7 @@ class MusicPlayer(object):
         self.now_playing = None
         self.lock = Lock()
         self.searcher = MusicSearcher()
-        self.idle = True
+        self.last_used = int(time.time())
         pass
 
     def __len__(self):
@@ -58,23 +57,11 @@ class MusicPlayer(object):
     def __getattribute__(self, item):
         method = object.__getattribute__(self, item)
         if callable(method):
-            if self.idle:
-                self.idle = False
+            self.last_used = int(time.time())
+
         return method
 
-    def __del__(self):
-        if self.voice_client and self.voice_client.is_connected():
-            try:
-                loop = get_running_loop()
-                fut = run_coroutine_threadsafe(self.voice_client.disconnect(), loop)
-            except Exception:
-                traceback.print_exc()
-                return
 
-            try:
-                fut.result()
-            except Exception:
-                traceback.print_exc()
 
     def add_song_nowait(self, item: Song):
         """Add song to player queue
@@ -121,7 +108,7 @@ class MusicPlayer(object):
         finally:
             return songs
 
-    async def get_song_nowait(self) -> Song:
+    def get_song_nowait(self) -> Song:
         return self._queue.get_nowait()
 
     async def get_song(self) -> Coroutine:
@@ -157,13 +144,13 @@ class MusicPlayer(object):
         except AsyncioTimeoutError:
             return None
         if not self._queue.empty():
-            after = await self._queue.get_by_index(0)
+            after = self._queue.get_by_index(0)
             await after.prepare_to_go()
         return next_song
 
     async def get_next_nowait(self) -> Union[Song, None]:
         """
-        Get song from queue and prepare song after
+        Get song from queue and prepare song after or raise QueueEmpty
 
         Returns
         --------
@@ -174,7 +161,7 @@ class MusicPlayer(object):
         next_song = await self.get_song_nowait()
 
         try:
-            after = await self._queue.get_by_index(0)
+            after = self._queue.get_by_index(0)
             await after.prepare_to_go()
 
         except IndexError:
@@ -202,14 +189,14 @@ class MusicPlayer(object):
                 fut.result()
             except TimeoutError:
                 # traceback.print_exc()
-                print(self.idle)
+
                 return
             except VoiceClientError:
                 print("<INFO> Bot was kicked by user or lost connection to channel")
 
         song = await self.get_next(timeout=30.0)
         if not song:
-            self.idle = True
+
             print(f"{str(self)} is idle")
 
             return
@@ -231,27 +218,22 @@ class MusicPlayer(object):
     def qsize(self):
         return self._queue.qsize()
 
-    async def current_queue(self) -> list:
-        return await self._queue.get_current()
+    def current_queue(self) -> list:
+        return self._queue.get_current()
 
     def pause(self):
         if not self.voice_client.is_playing():
-            raise AlreadyPlaying()
+            raise NotPlaying()
         if self.voice_client.is_paused():
             raise AlreadyPaused()
-        try:
-            self.voice_client.pause()
-        except Exception:
-            traceback.print_exc()
+
+        self.voice_client.pause()
 
     def resume(self):
         if not self.voice_client.is_paused():
             raise NotPaused()
 
-        try:
-            self.voice_client.resume()
-        except Exception:
-            traceback.print_exc()
+        self.voice_client.resume()
 
 
 class NotPlaying(Exception):

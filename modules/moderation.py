@@ -38,7 +38,6 @@ class Moderation(Cog):
 
     @staticmethod
     def convert_kick_args(ctx, args):
-        print(ctx.message.mentions)
         # if args:
         #
         #     if '<@' in args:
@@ -143,9 +142,8 @@ class Moderation(Cog):
         #         return
         #
         # await ctx.send(f"{get_text('kicked')}: {kicked}")
-        print(args)
+
         destination, args = Moderation.convert_kick_args(ctx, args)
-        print(args)
         if not await Moderation.kick_checks(ctx, destination):
             return
 

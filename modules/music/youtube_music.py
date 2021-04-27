@@ -8,16 +8,20 @@ import math
 import typing
 from asyncio import QueueEmpty
 from asyncio.queues import QueueFull
+import time
+from warnings import warn
 
 from discord import Embed, ClientException
-from discord.ext import commands
+from discord.ext import commands, tasks
+from youtube_dl import DownloadError
 
 from global_settings import MAX_SONG_DURATION
-from modules.music.music import MusicPlayer, MusicSearcher
+from modules.music.music import MusicPlayer, MusicSearcher, AlreadyPaused, NotPaused
 from modules.music.song import Song
 from utils.lib import Checks
 from utils.message_handler import get_text
 from utils.utils import bender_module, BenderModuleError
+
 
 __all__ = ['YoutubeMusic']
 logger = logging.getLogger('bender')
@@ -33,8 +37,35 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         self.BOT: commands.Bot = bot
         self.players = {}
         self.join = None
-
+        self.garbage_collector.start()
         print(f"Initialized {str(__name__)}")
+
+    def cog_unload(self):
+        self.garbage_collector.cancel()
+
+    async def cog_command_error(self, ctx, error):
+        if isinstance(error, DownloadError):
+            await ctx.send(get_text("lost_connection_error"))
+        else:
+            raise
+
+    @tasks.loop(minutes=1)
+    async def garbage_collector(self):
+        t = int(time.time())
+        print(self.players)
+        keys = list(self.players.keys())
+        for key in keys:
+            player = self.players[key]
+            print(player.last_used)
+            print(t - player.last_used)
+            if player.voice_client.is_playing():
+                player.last_used = int(time.time())
+            if t - player.last_used > 120:
+                if player.voice_client.is_connected():
+                    await player.voice_client.channel.disconnect()
+                self.players.pop(key)
+
+        del keys
 
     def is_playing(self, ctx: commands.Context):
         try:
@@ -43,15 +74,19 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             return False
         return ctx.voice_client.is_playing()
 
+
+
     @commands.Cog.listener()
     async def on_ready(self):
 
         self.join = self.BOT.get_command('join')
 
         if not self.join:
-            message = f"cog {self.__class__.__name__} requires join command from " \
+            message = f"Can't load cog {self.__class__.__name__} because it requires join command from " \
                       f"VoiceClientCommands "
-            raise BenderModuleError(message)
+            # raise BenderModuleError(message)
+            warn(message)
+            self.BOT.remove_cog(self.qualified_name)
 
     @commands.command(name="play", aliases=["p"])
     @commands.check(Checks.can_join_speak)
@@ -217,6 +252,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     # todo loop command
     # todo pause, resume cmd
 
+
     @staticmethod
     def format_song_details(song: Song, return_tuple: bool = False) -> typing.Union[tuple[str, str], str]:
         if not song:
@@ -230,6 +266,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         return f"{title if title else '<NaN>'}" \
                f" [{str(datetime.timedelta(seconds=duration)) if duration > 0 else '<NaN>'}]"
 
+    #todo embed, thumbnail, link
     @commands.command(name='nowplaying', aliases=['np'])
     @commands.guild_only()
     async def nowplaying(self, ctx):
@@ -251,7 +288,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             await ctx.send("not_playing_error")
             return
 
-        queue = await player.current_queue()
+        queue = player.current_queue()
         pages = int(math.ceil(len(queue) / float(PAGE_SIZE)))
         pages = 0 if pages == 0 else pages
         if page != 1 and (page > pages or page < 1):
@@ -300,10 +337,30 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     @commands.command(name='pause')
     async def pause(self, ctx: commands.Context):
         if self.is_playing(ctx):
-            pass
+            player = self.players[str(ctx.guild.id)]
+            try:
+                player.pause()
+                await ctx.send(get_text("paused"))
+            except AlreadyPaused:
+                await ctx.send(get_text("already_paused_error"))
+                return
         else:
             await ctx.send("not_playing_error")
             return
         pass
 
-# todo progress in np command
+    @commands.command(name='resume')
+    async def resume(self, ctx: commands.Context):
+        if self.is_playing(ctx):
+            player = self.players[str(ctx.guild.id)]
+            try:
+                player.resume()
+                await ctx.send(get_text("resumed"))
+            except NotPaused:
+                await ctx.send(get_text("not_paused_error"))
+                return
+        else:
+            await ctx.send("not_playing_error")
+            return
+        pass
+

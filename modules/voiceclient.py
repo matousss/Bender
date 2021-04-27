@@ -2,18 +2,25 @@ import traceback
 import typing
 
 from discord import VoiceChannel, ClientException
-from discord.ext.commands import Cog, BucketType, command, cooldown, check, Context, guild_only, \
-    bot_has_guild_permissions, BotMissingPermissions
+from discord.ext.commands import Cog, BucketType, command, cooldown, Context, guild_only, BotMissingPermissions
 
 from global_settings import DEBUG
 from utils import utils as butils
-from utils.utils import bender_module
+from utils.utils import bender_module, BenderModuleError
 from utils.message_handler import get_text
 
+try:
+    import nacl.secret
+    is_nacl = True
+except ImportError:
+    is_nacl = False
 
 @bender_module
 class VoiceClientCommands(Cog, name="Voice client"):
     def __init__(self, bot):
+        if not is_nacl:
+            raise BenderModuleError(f"{self.__class__.__name__} requires PyNaCl library to work with "
+                                    f"discord.VoiceClient")
         self.bot = bot
         print(f"Initialized {str(__name__)}")
 

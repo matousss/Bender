@@ -1,18 +1,18 @@
 import logging
 import sys
 import traceback
+from warnings import warn
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
-from youtube_dl import DownloadError
 
 from __init__ import __version__
 # noinspection PyUnresolvedReferences
 import modules
 from utils.config import Config
 from utils.message_handler import get_text
-from utils.utils import prefix as _prefix, set_global_variable, default_prefix
+from utils.utils import prefix as _prefix, set_global_variable, default_prefix, BenderModuleError
 
 # todo bender logger
 
@@ -62,10 +62,13 @@ async def on_command(command):
     print(f"<INFO> {str(command.author.name)} #{str(command.author.id)} executed command {str(command.command)}")
 
 
+
+
+
 @BOT.event
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
-        #await ctx.send(get_text("command_not_found_error"))
+        # await ctx.send(get_text("command_not_found_error"))
         return
     elif isinstance(error, discord.ext.commands.errors.NotOwner):
         await ctx.send(get_text("%s error_not_owner") % ctx.author.mention)
@@ -78,8 +81,6 @@ async def on_command_error(ctx, error):
         await ctx.send(get_text("guild_only"))
     elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions):
         await ctx.send(get_text("missing_permissions"))
-    elif isinstance(error, DownloadError):
-        await ctx.send(get_text("lost_connection_error"))
 
     else:
         raise error
@@ -109,11 +110,17 @@ if __name__ == '__main__':
 
     from utils.utils import __cogs__
 
-    print(__cogs__)
     for cog in __cogs__:
-        cog = cog(BOT)
+        try:
+            cog = cog(BOT)
+        except BenderModuleError as e:
+            warn(f"Cannot initialize {cog.__name__} due to error: {e}")
+            continue
+
         try:
             BOT.add_cog(cog)
+        except BenderModuleError as e:
+            warn(f"Cannot load {cog.__name__} due to error: {e}")
         except Exception as e:
             traceback.print_exc()
             logger.exception(e)
