@@ -3,13 +3,13 @@ import subprocess
 import discord.ext
 import discord.utils as dutils
 from discord import Message
-
-__all__ = ['get_channel', 'BenderModuleError', '__cogs__', 'bender_module', 'default_prefix',
-           'prefix', 'set_global_variable', 'get_global_variable', 'Checks']
-
 from discord.ext.commands import CommandNotFound, Cog, Context, CogMeta
 
 from .message_handler import get_text
+from .temp import global_variables
+
+__all__ = ['get_channel', 'BenderModuleError', '__cogs__', 'bender_module', 'default_prefix',
+           'prefix', 'set_global_variable', 'get_global_variable', 'Checks', 'on_command_error']
 
 
 class Checks:
@@ -17,8 +17,9 @@ class Checks:
     async def can_join_speak(ctx: Context):
         return ctx.me.guild_permissions.speak and ctx.me.guild_permissions.connect
 
+    # noinspection PyBroadException
     @staticmethod
-    def checkFFMPEG() -> bool:
+    def check_ffmpeg() -> bool:
         """
         Check for ffmpeg/avconv
         """
@@ -37,6 +38,7 @@ class Checks:
 
 
 async def on_command_error(ctx, error):
+    """Default command error handler"""
     if isinstance(error, CommandNotFound):
         # await ctx.send(get_text("command_not_found_error"))
         pass
@@ -55,6 +57,7 @@ async def on_command_error(ctx, error):
     else:
         return True
     return False
+
 
 def get_channel(ctx: Context, channel: str):
     if channel.startswith("<#"):
@@ -87,8 +90,6 @@ def bender_module(cog: Cog):
     __cogs__.append(cog)
     return cog
 
-    return
-
 
 # todo load from group settings
 prefixes = {
@@ -101,6 +102,7 @@ def default_prefix() -> str:
     return prefixes['-1']
 
 
+# noinspection PyUnusedLocal
 def prefix(bot, message: Message) -> str:
     try:
         if message.guild:
@@ -110,13 +112,10 @@ def prefix(bot, message: Message) -> str:
     return prefixes['-1']
 
 
-from .temp import global_variables
-
-
-def set_global_variable(object, key=None):
+def set_global_variable(item, key=None):
     if not key:
-        key = object.__name__
-    global_variables[key] = object
+        key = item.__name__
+    global_variables[key] = item
 
     return global_variables[key]
 
@@ -124,5 +123,5 @@ def set_global_variable(object, key=None):
 def get_global_variable(key):
     try:
         return global_variables[key]
-    except:
+    except Exception:
         raise

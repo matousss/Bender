@@ -379,6 +379,11 @@ class MusicPlayer(object):
         except:
             raise
 
+    def clear(self) -> None:
+        """
+        Clear the queue
+        """
+        self._queue.clear()
 
 class MusicSearcher(object):
     """
