@@ -60,7 +60,7 @@ async def on_guild_join(guild):
 
 @BOT.event
 async def on_command(command):
-    print(f"<INFO> {str(command.author.name)} #{str(command.author.id)} executed command {str(command.command)}")
+    print(f"<INFO> {str(command.author.name)} #{str(command.author.discriminator)} executed command {str(command.command)}")
 
 
 @BOT.event

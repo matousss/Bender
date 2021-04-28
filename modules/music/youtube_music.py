@@ -15,7 +15,7 @@ from warnings import warn
 
 from discord import Embed, ClientException, Member
 from discord.ext import commands, tasks
-from discord.ext.commands import CommandInvokeError
+from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure
 from youtube_dl import DownloadError
 
 from global_settings import MAX_SONG_DURATION
@@ -28,6 +28,13 @@ __all__ = ['YoutubeMusic']
 logger = logging.getLogger('bender')
 
 PAGE_SIZE = 10
+
+
+class NotInSameChannel(CheckFailure):
+    def __init__(self, message=None):
+        super().__init__(message or 'You must be in same channel as bot to use this command.')
+
+    pass
 
 
 @bender_module
@@ -47,11 +54,14 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     async def cog_command_error(self, ctx, error):
         if isinstance(error, CommandInvokeError):
             error = error.__cause__
+
         if isinstance(error, DownloadError):
             await ctx.send(get_text("track_stacked"))
         elif isinstance(error, YTNoResult):
-            print("hoven")
             await ctx.send(get_text("no_result"))
+
+        elif isinstance(error, NotInSameChannel):
+            await ctx.send(get_text("channel_not_match_error"))
         elif await oce(ctx, error):
             print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
@@ -79,7 +89,8 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             if (not player.voice_client.is_paused() and t - player.last_used > 120) or t - player.last_used > 300:
                 if player.voice_client.is_connected():
                     await player.voice_client.disconnect()
-                self.players.pop(key)
+                    player.clear()
+                del self.players[key]
 
         del keys
 
@@ -98,6 +109,18 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
     def is_paused(self, ctx: commands.Context) -> bool:
         return self.is_player(ctx) and ctx.voice_client.is_paused()
+
+    def cog_check(self, ctx: commands.Context):
+        if ctx.guild is None:
+            raise NoPrivateMessage()
+
+        if not ctx.voice_client or ctx.voice_client.channel or ctx.author.voice or ctx.author.voice.channel:
+            raise NotInSameChannel()
+        print(ctx.command == self.play)
+        if ctx.voice_client.channel.id != ctx.author.voice.channel.id:
+            raise NotInSameChannel()
+
+        return True
 
     def prepare_embed(self, song: Song, embed: Embed = Embed()) -> Embed:
         if song.thumbnail and len(song.thumbnail) > 0:
@@ -154,9 +177,9 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             player: MusicPlayer = self.players[str(ctx.guild.id)]
 
         async with player.lock:
-            if ctx.voice_client and ctx.voice_client.is_connected:
+            if ctx.voice_client and ctx.voice_client.is_connected():
                 if ctx.author.voice.channel:
-                    if ctx.voice_client.channel.id != ctx.author.voice.channel.id:
+                    if self.is_in_same_channel():
                         await ctx.send(get_text("playing_error_different_channel"))
                 else:
                     await ctx.send(get_text("user_not_connected"))
@@ -305,10 +328,10 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             return
 
     # todo remove from queue command
-    @commands.command(name='remove', aliases = ['rm'])
-    @commands.guild_only
+    @commands.command(name='remove', aliases=['rm'])
+    @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
-    async def remove(self, ctx: commands.Context,  position: int, *,
+    async def remove(self, ctx: commands.Context, position: int, *,
                      error: typing.Optional[str] = None):
 
         if self.is_playing(ctx) or self.is_paused(ctx):
@@ -318,14 +341,13 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                 return
             else:
                 async with player.lock:
-                    song_title = player.seek(position-1).details['title']
+                    song_title = player.seek(position - 1).details['title']
                     try:
                         player.remove_by_index(position)
                     except:
                         await ctx.send(get_text("unknown_remove_error"))
                         raise
                     await ctx.send(get_text("%s removed") % song_title)
-
 
     @commands.command(name='nowplaying', aliases=['np'])
     @commands.cooldown(1, 2, commands.BucketType.guild)
@@ -364,7 +386,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
     @commands.guild_only()
     async def queue(self, ctx, page: typing.Optional[int] = None, *, not_page: typing.Optional[str] = None):
         if not_page:
-            await ctx.send(get_text("no_page_error") + f" ``{page if page else ''+not_page}``")
+            await ctx.send(get_text("no_page_error") + f" ``{page if page else '' + not_page}``")
             return
         if not page:
             page = 1

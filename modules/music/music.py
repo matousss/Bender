@@ -69,7 +69,7 @@ class QueueEmpty(Exception):
 
 
 class MusicPlayer(object):
-    """
+    __doc__ = """
     Object representing music player
 
     Attributes
@@ -78,10 +78,13 @@ class MusicPlayer(object):
         Voice client of bot in chosen guild
 
     _queue: :class: asyncio.queues.Queue
-        Queue for :class: Song object which will be played
+        Queue for Song objects which will be played
 
     now_playing: :class: Song
         Holds now playing song
+
+    lock : asyncio.Lock
+
     """
 
     def __init__(self, voice_client: VoiceClient, queue: deque = deque()):
@@ -264,27 +267,72 @@ class MusicPlayer(object):
         result = None
         if return_removed:
             result = list(self._queue[:count])
-
-        for _ in range(count):
-            self._queue.popleft()
+        self._queue = self._queue[:count]
         return result
 
-    def remove_by_index(self, index: int):
+    def remove_by_index(self, index: int) -> None:
+        """
+        Remove object from queue by given index
+
+        Parameters
+        ----------
+        index : int
+            Position of object in queue, which should be removed
+
+        Raises
+        ------
+        IndexError
+            Raised when index is out of range
+        """
         try:
             del self._queue[index - 1]
         except:
             raise
 
     def queue_empty(self) -> bool:
+        """
+        Return if queue is empty
+
+        Returns
+        -------
+        bool
+            Returns True when queue is empty otherwise returns False
+        """
         return len(self._queue) == 0
 
-    def qsize(self):
+    def qsize(self) -> int:
+        """
+        Return current size of queue
+
+        Returns
+        -------
+        int
+            Current size of queue
+        """
         return len(self._queue)
 
     def current_queue(self) -> list:
+        """
+        Return copy of queue of player as list
+
+        Returns
+        -------
+        list
+            Copy of player queue
+        """
         return list(self._queue)
 
-    def pause(self):
+    def pause(self) -> None:
+        """
+        Pause player or raise exception
+
+        Raises
+        ------
+        AlreadyPaused
+            Raised when trying to pause paused player
+        NotPlaying
+            Raised when player isn't playing
+        """
         if not self.voice_client.is_playing():
             raise NotPlaying()
         if self.voice_client.is_paused():
@@ -292,7 +340,16 @@ class MusicPlayer(object):
 
         self.voice_client.pause()
 
-    def resume(self):
+    def resume(self) -> None:
+        """
+        Resume player or raise NotPaused
+
+        Raises
+        ------
+        NotPaused
+            Raised when trying to unpause not paused player
+
+        """
         if not self.voice_client.is_paused():
             raise NotPaused()
 
@@ -300,15 +357,22 @@ class MusicPlayer(object):
 
     def seek(self, index: int) -> Song:
         """
+        Returns object on given position in queue of player
+
         Parameters
         ----------
-        index: Integer
+        index : int
             Position of object in queue (starting with 0)
 
         Returns
         -------
         Song
-            :class: Song
+            Song object on given position in self._queue
+
+        Raises
+        ------
+        IndexError
+            Raised when index is out of range
         """
         try:
             return self._queue[index]
