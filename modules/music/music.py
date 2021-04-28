@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import sys
 import time
+import traceback
 from asyncio import get_running_loop, run_coroutine_threadsafe, wait_for, Lock
 from collections import deque
 from typing import Union
@@ -141,23 +143,31 @@ class MusicPlayer(object):
             Variable in songs isn't :class: Song
         """
 
-        try:
-            while len(songs) > 0:
-                song = songs.pop(0)
-                if isinstance(song, Song):
-                    try:
-                        self.add_song(song)
-                        # taks = self.add_song_nowait(song)
-                        # await wait_for(task, timeout=None)
+        # try:
+        #     while len(songs) > 0:
+        #         song = songs.pop(0)
+        #         if isinstance(song, Song):
+        #             try:
+        #                 self.add_song(song)
+        #                 # taks = self.add_song_nowait(song)
+        #                 # await wait_for(task, timeout=None)
+        #
+        #             except QueueFull:
+        #                 songs.insert(0, song)
+        #                 raise
+        #         else:
+        #             raise ValueError(f"Accept only {Song.__name__} and not {song.__class__.__name__}")
+        #
+        # finally:
+        #     return songs
 
-                    except QueueFull:
-                        songs.insert(0, song)
-                        raise
-                else:
-                    raise ValueError(f"Accept only {Song.__name__} and not {song.__class__.__name__}")
-
-        finally:
-            return songs
+        if self._queue.maxlen and len(songs) + len(self._queue) > self._queue.maxlen:
+            self.add_song(songs[:(self._queue.maxlen - len(self._queue))])
+            songs = songs[(self._queue.maxlen - len(self._queue)):]
+        else:
+            self._queue.extend(songs)
+            songs = []
+        return songs
 
     def get_song(self) -> Song:
         if len(self._queue) == 0:
@@ -215,7 +225,9 @@ class MusicPlayer(object):
             if self.looped:
                 self.add_song(song)
             if error:
-                print(error)
+                print(f'Ignoring exception in method music.MusicPlayer.play.restart_play in  object'
+                      f' {str(self.__hash__())}', file=sys.stderr)
+                traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
             fut = run_coroutine_threadsafe(self.play(), loop)
             try:
@@ -248,15 +260,20 @@ class MusicPlayer(object):
                 raise DownloadError()
         self.now_playing = song
 
-    def remove(self, count: int = 1, return_removed: bool = False):
+    def remove(self, count: int = 1, return_removed: bool = False) -> Union[None, list]:
+        result = None
         if return_removed:
-            result = [self.now_playing]
-            result.extend(list(self._queue[:count]))
+            result = list(self._queue[:count])
 
         for _ in range(count):
             self._queue.popleft()
+        return result
 
-    # todo remove by index
+    def remove_by_index(self, index: int):
+        try:
+            del self._queue[index - 1]
+        except:
+            raise
 
     def queue_empty(self) -> bool:
         return len(self._queue) == 0
@@ -281,6 +298,23 @@ class MusicPlayer(object):
 
         self.voice_client.resume()
 
+    def seek(self, index: int) -> Song:
+        """
+        Parameters
+        ----------
+        index: Integer
+            Position of object in queue (starting with 0)
+
+        Returns
+        -------
+        Song
+            :class: Song
+        """
+        try:
+            return self._queue[index]
+        except:
+            raise
+
 
 class MusicSearcher(object):
     """
@@ -294,12 +328,15 @@ class MusicSearcher(object):
         """
         Search for song or playlist from given url or keyword
         Returns one Song() or list of Song()
+
+        Attributes
+        ----------
+        retry - How many should youtube_dl retry when first attempt fail
+
         Raises
         -------
         NoResult()
             for no result
-        
-        retry - How many should youtube_dl retry when first attempt fail 
         """
 
         def search(keywords: str):
