@@ -5,14 +5,15 @@ from warnings import warn
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import CommandNotFound, Cog
+from discord.ext.commands import Cog
 
-from __init__ import __version__
 # noinspection PyUnresolvedReferences
 import modules
+from __init__ import __version__
 from utils.config import Config
 from utils.message_handler import get_text
-from utils.utils import prefix as _prefix, set_global_variable, default_prefix, BenderModuleError
+from utils.utils import prefix as _prefix, set_global_variable, default_prefix, BenderModuleError, \
+    on_command_error as oce
 
 # todo bender logger
 
@@ -62,31 +63,13 @@ async def on_command(command):
     print(f"<INFO> {str(command.author.name)} #{str(command.author.id)} executed command {str(command.command)}")
 
 
-
-
-
 @BOT.event
 async def on_command_error(ctx, error):
     cog = ctx.cog
     if cog and Cog._get_overridden_method(cog.cog_command_error) is not None:
-        return
+        return False
 
-    if isinstance(error, CommandNotFound):
-        # await ctx.send(get_text("command_not_found_error"))
-        return
-    elif isinstance(error, discord.ext.commands.errors.NotOwner):
-        await ctx.send(get_text("%s error_not_owner") % ctx.author.mention)
-    elif isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
-        # await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
-        await ctx.send(get_text("%s on_cooldown_error") % f" ``{str(int(error.cooldown.per))}s``")
-    elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
-        await ctx.send(get_text("missing_parameters_error"))
-    elif isinstance(error, discord.ext.commands.NoPrivateMessage):
-        await ctx.send(get_text("guild_only"))
-    elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions):
-        await ctx.send(get_text("missing_permissions"))
-
-    else:
+    if await oce(ctx, error):
         print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
         traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 

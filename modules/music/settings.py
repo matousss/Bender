@@ -9,7 +9,7 @@ YTDL_OPTIONS = {
     'audioformat': 'mp3',
     'noplaylist': False,
     'nocheckcertificate': True,
-    'ignoreerrors': False,
+    'ignoreerrors': True,
     'logtostderr': False,
     'no_warnings': False,
     # 'default_search': 'auto',

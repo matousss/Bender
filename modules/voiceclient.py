@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 import typing
 
@@ -57,7 +58,7 @@ class VoiceClientCommands(Cog, name="Voice client"):
                     await ctx.send(f"{get_text('join')} {destination.name}")
 
                 except Exception:
-                    await ctx.send(get_text("join_error_unknown"))
+                    await ctx.send(get_text("unknow_join_error"))
                 return
 
         if destination.permissions_for(ctx.me).connect is False or destination.permissions_for(ctx.me).speak is False:
@@ -65,18 +66,17 @@ class VoiceClientCommands(Cog, name="Voice client"):
             raise BotMissingPermissions()
             return
         try:
-            await destination.connect()
+            await destination.connect(timeout=10)
             await ctx.send(f"{get_text('join')} {destination.name}")
             print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
+        except asyncio.TimeoutError as e:
+            await ctx.send(get_text("timeout_error"))
+            return
+        except ClientException:
+            await ctx.send("already_connected_error")
+            print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
+            return
 
-        except Exception as e:
-            traceback.print_exc()
-            if destination is None:
-                print("<ERROR> Error occurred while joining channel: no channel specified or user is not in channel")
-            else:
-                print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
-            await ctx.send(get_text("unexpected_error_join"))
-            traceback.print_exc()
 
     @command(name="disconnect", aliases=["dis", "leave", "l"])
     @cooldown(1, 10, BucketType.user)

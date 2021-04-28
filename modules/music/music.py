@@ -209,6 +209,8 @@ class MusicPlayer(object):
         loop = get_running_loop()
 
         def restart_play(error):
+            self.started = None
+
             # https://discordpy.readthedocs.io/en/stable/faq.html#how-do-i-pass-a-coroutine-to-the-player-s-after-function
             if self.looped:
                 self.add_song(song)
@@ -236,15 +238,21 @@ class MusicPlayer(object):
             await wait_for(song.prepare_to_go(), timeout=None)
         try:
             self.voice_client.play(song.source, after=restart_play)
+            self.started = int(time.time())
         except:
             await wait_for(song.prepare_to_go(), timeout=None)
             try:
                 self.voice_client.play(song.source, after=restart_play)
+                self.started = int(time.time())
             except:
                 raise DownloadError()
         self.now_playing = song
 
-    def remove(self, count: int = 1):
+    def remove(self, count: int = 1, return_removed: bool = False):
+        if return_removed:
+            result = [self.now_playing]
+            result.extend(list(self._queue[:count]))
+
         for _ in range(count):
             self._queue.popleft()
 
@@ -311,10 +319,10 @@ class MusicSearcher(object):
                 return s
             else:
                 try:
-
+                    print("kokot")
                     s = MusicSearcher._youtube_dl.extract_info(f"ytsearch1:{keywords}", download=False)['entries'][0]
-
-                except IndexError or TypeError:
+                    print("lmao")
+                except:
                     return None
                 return s
 

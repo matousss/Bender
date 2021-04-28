@@ -22,7 +22,7 @@ class Info(Cog):
     @command(name="ping")
     async def ping(self, ctx: Context):
         # print("<INFO> ping: "+str(float(bot.latency)*1000).split(".")[0] +"ms")
-        await ctx.send(f"{get_text('ping')}: ``{str(round(float(ctx.BOT.latency) * 1000))}ms``")
+        await ctx.send(f"{get_text('ping')}: ``{str(round(float(ctx.bot.latency) * 1000))}ms``")
 
     # @command(name="suicide")
     # @is_owner()
