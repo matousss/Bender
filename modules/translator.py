@@ -46,4 +46,4 @@ class GoogleTranslator(Cog, name = 'Google Translator'):
         except ValueError:
             await ctx.send(get_text("translate_error_invalid_code"))
             return
-        await ctx.send("Translated from `" + product.src + "` as `" + product.text + "`")
+        await ctx.send(f"{get_text('translated_from')} `{product.src}` {get_text('as')} `{product.text}`")

@@ -273,7 +273,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         return f"{title if title else '<NaN>'}" \
                f" [{str(datetime.timedelta(seconds=duration)) if duration > 0 else '<NaN>'}]"
 
-
+    #todo progress
     @commands.command(name='nowplaying', aliases=['np'])
     @commands.guild_only()
     async def nowplaying(self, ctx):
