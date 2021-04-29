@@ -5,8 +5,8 @@ import discord.utils as dutils
 from discord import Message
 from discord.ext.commands import CommandNotFound, Cog, Context, CogMeta, CommandError
 
-from .message_handler import get_text
-from .temp import global_variables
+from bender.utils.message_handler import get_text
+from bender.utils.temp import global_variables
 
 __all__ = ['get_channel', 'BenderModuleError', '__cogs__', 'bender_module', 'default_prefix',
            'prefix', 'set_global_variable', 'get_global_variable', 'Checks', 'on_command_error',
@@ -107,23 +107,24 @@ def bender_module(cog: Cog):
 
 # todo load from group settings
 prefixes = {
-    '-1': ',',
-    '767788412446048347': 'ß'
+    -1: ',',
+    767788412446048347: ','
 }
 
 
 def default_prefix() -> str:
-    return prefixes['-1']
+    return prefixes[-1]
 
 
 # noinspection PyUnusedLocal
-def prefix(bot, message: Message) -> str:
+def prefix(bot = None, message: Message = None) -> str:
+    if not message: return prefixes[-1]
     try:
         if message.guild:
-            return prefixes[str(message.guild.id)]
+            return prefixes[message.guild.id]
     except KeyError:
         pass
-    return prefixes['-1']
+    return prefixes[-1]
 
 
 def set_global_variable(item, key=None):

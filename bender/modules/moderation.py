@@ -2,7 +2,7 @@ import typing
 
 from discord import VoiceChannel
 from discord.ext.commands import Cog, command, Context, group, guild_only
-
+from discord import utils as dutils
 from bender.utils import utils as butils
 
 __all__ = ['Moderation']
@@ -31,7 +31,8 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
         return False
 
     @group(name="kick", aliases=["k"], description=get_text("command_kick_description"),
-                      help=get_text("command_kick_help"))
+           help=get_text("command_kick_help"), usage=f"[all/others] [{get_text('channel')}] <@{get_text('member')}>"
+                                                     f"<@{get_text('member')}> <@{get_text('role')}>...")
     @guild_only()
     async def kick(self, ctx: Context):
         if ctx.invoked_subcommand is None:
@@ -65,7 +66,7 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
         #     destination: VoiceChannel = ctx.author.voice.channel if (
         #             ctx.author.voice and ctx.author.voice.channel) else None
         if args:
-
+            print(args)
             if '<@' in args:
                 args = args.split('<@', 1)
                 if len(args) > 1:
@@ -76,8 +77,6 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
                 destination = args
                 args = None
 
-
-
             if not destination.isspace() and len(destination) > 0:
                 destination = butils.get_channel(ctx, destination)
             else:
@@ -86,11 +85,12 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
         else:
             destination: VoiceChannel = ctx.author.voice.channel if (
                     ctx.author.voice and ctx.author.voice.channel) else None
-        args = []
-        for m in ctx.message.mentions:
-            args.append(m.id)
+        if args:
+            args = args.split("<@")
+        roles = ctx.message.role_mentions
+        members = ctx.message.mentions
 
-        return destination, args
+        return destination, members, roles
 
     @staticmethod
     async def kick_checks(ctx: Context, destination):
@@ -106,9 +106,11 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
         return True
 
 
+
     @kick.command(aliases=['a'], description=get_text("command_kick_all_description"),
-                      help=get_text("command_kick_all_help"))
-    async def all(self, ctx: Context, *, args: typing.Optional[str] = None):
+                  help=get_text("command_kick_all_help"), usage=f"[{get_text('channel')}] <@{get_text('member')}>"
+                                                     f"<@{get_text('member')}> <@{get_text('role')}>...")
+    async def all(self, ctx: Context, *, members: typing.Optional[str] = None):
         # if destination:
         #     if '<@' in destination:
         #         destination = destination.split('<@', 1)[0]
@@ -146,28 +148,40 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
         #
         # await ctx.send(f"{get_text('kicked')}: {kicked}")
 
-        destination, args = Moderation.convert_kick_args(ctx, args)
+        destination, members, roles = Moderation.convert_kick_args(ctx, members)
         if not await Moderation.kick_checks(ctx, destination):
             return
 
         if destination.permissions_for(ctx.author).move_members:
-            to_kick = len(args) if args else len(destination.members)
+            to_kick = len(members) if members else len(destination.members)
             kicked = 0
-            if args and len(args) > 0:
-                for member in destination.members:
-                    for m in args:
-                        if str(m) == str(member.id):
+            if (members and len(members) > 0) or (roles and len(roles) > 0):
+                for connected_member in destination.members:
+                    for marked_member in members:
+                        if marked_member.id == connected_member.id:
                             try:
-                                await member.move_to(None)
+                                await connected_member.move_to(None)
                                 kicked += 1
+                                break
                             except:
-                                pass
-                            args.remove(m)
+                                break
+                    else:
+                        for role in roles:
+                            if role in connected_member.roles:
+                                try:
+                                    await connected_member.move_to(None)
+                                    kicked += 1
+                                    break
+                                except:
+                                    break
+                        continue
+                    members.remove(marked_member)
+
             else:
                 marked = destination.members.copy()
-                for m in marked:
+                for marked_member in marked:
                     try:
-                        await m.move_to(None)
+                        await marked_member.move_to(None)
                         kicked += 1
                     except:
                         raise
@@ -178,9 +192,8 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
             await ctx.send("user_missing_permissions_error")
             return
 
-
     @kick.command(aliases=['o'], description=get_text("command_kick_others_description"),
-                      help=get_text("command_kick_others_help"))
+                  help=get_text("command_kick_others_help"))
     async def others(self, ctx: Context, *, args: typing.Optional[str] = None):
         destination, args = Moderation.convert_kick_args(ctx, args)
 

@@ -8,7 +8,7 @@ from collections import deque
 from typing import Union
 
 from discord import VoiceClient
-from youtube_dl import YoutubeDL, DownloadError
+from youtube_dl import YoutubeDL
 
 from bender.modules.music import settings
 from bender.modules.music.song import Song, SongDetails
@@ -36,6 +36,8 @@ class AlreadyPlaying(Exception):
     """Raised by MusicPlayer.play() when audio is already playing"""
     pass
 
+class PlayError(Exception):
+    pass
 
 class VoiceClientError(Exception):
     """Raised by MusicPlayer on error with voice_client"""
@@ -225,6 +227,14 @@ class MusicPlayer(object):
 
         loop = get_running_loop()
 
+        song = await self.get_next()
+
+        if not song:
+            print(f"{str(self)} is idle")
+
+            return
+        song: Song
+
         def restart_play(error):
             self.started = None
 
@@ -246,12 +256,8 @@ class MusicPlayer(object):
             except VoiceClientError:
                 print("<INFO> Bot was kicked by user or lost connection to channel")
 
-        song = await self.get_next()
 
-        if not song:
-            print(f"{str(self)} is idle")
 
-            return
 
         if not song.source:
             await wait_for(song.prepare_to_go(), timeout=None)
@@ -264,7 +270,7 @@ class MusicPlayer(object):
                 self.voice_client.play(song.source, after=restart_play)
                 self.started = int(time.time())
             except Exception:
-                raise DownloadError()
+                raise PlayError()
         self.now_playing = song
 
     def remove(self, count: int = 1, return_removed: bool = False) -> Union[None, list]:

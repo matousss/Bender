@@ -15,12 +15,12 @@
 # from bender.utils.utils import prefix as _prefix, set_global_variable, default_prefix, BenderModuleError, \
 #     on_command_error as oce
 #
-# # todo bender logger
+#
 #
 # # todo handle all exceptions
 #
 #
-# # todo check integrity
+#
 # # todo text translations
 # # todo turn to app
 #

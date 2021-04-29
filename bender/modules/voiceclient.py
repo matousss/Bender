@@ -30,7 +30,7 @@ class VoiceClientCommands(Cog, name="Voice client", description=get_text("cog_vo
     @guild_only()
     @bot_has_guild_permissions(connect=True, speak=True)
     @cooldown(1, 10, BucketType.guild)
-    async def join(self, ctx: Context, channel: typing.Optional[str] = None):
+    async def join(self, ctx: Context, *,channel: typing.Optional[str] = None):
         if ctx.voice_client and ctx.voice_client.is_connected():
             raise ClientException("Already connected to voice channel")
 

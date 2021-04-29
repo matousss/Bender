@@ -1,8 +1,10 @@
 import sys
 import traceback
+import typing
 from warnings import warn
 
-from discord.ext.commands import Bot, Cog
+from discord import Member, Role
+from discord.ext.commands import Bot, Cog, command, Greedy
 
 from bender import __version__
 from bender.utils.message_handler import get_text
@@ -53,3 +55,11 @@ class Bender(Bot):
             except Exception as e:
                 print('Ignoring exception:', file=sys.stderr)
                 traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
+
+        self.add_command(self.traktor)
+
+    @staticmethod
+    @command(name="traktor")
+    async def traktor(ctx, memebers: Greedy[Member], roles: Greedy[Role]):
+        print(f"members: {str(memebers)} roles: {str(roles)}")
+        await ctx.send(f"members: {str(memebers)} roles: {str(roles)}")
