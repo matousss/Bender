@@ -14,7 +14,9 @@ class GoogleTranslator(Cog, name = 'Google Translator'):
         self.bot = bot
         print(f"Initialized {str(__name__)}")
 
-    @command(name="translate", aliases=["tr"])
+    #todo revision
+    @command(name="translate", aliases=["tr"], description=get_text("command_translate_description"),
+                      help=get_text("command_translate_help"))
     @cooldown(1, 10, BucketType.user)
     async def translate(self, ctx, lang: str, seclang: typing.Optional[str] = "", *,
                          content: typing.Optional[str] = ""):

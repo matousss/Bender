@@ -3,18 +3,19 @@ import traceback
 import typing
 
 from discord import VoiceChannel, ClientException
-from discord.ext.commands import Cog, BucketType, command, cooldown, Context, guild_only, BotMissingPermissions
+from discord.ext.commands import Cog, BucketType, command, cooldown, Context, guild_only, bot_has_guild_permissions
 
-from global_settings import DEBUG
 from utils import utils as butils
-from utils.utils import bender_module, BenderModuleError
 from utils.message_handler import get_text
+from utils.utils import bender_module, BenderModuleError, BotMissingPermissions
 
 try:
     import nacl.secret
+
     is_nacl = True
 except ImportError:
     is_nacl = False
+
 
 @bender_module
 class VoiceClientCommands(Cog, name="Voice client"):
@@ -25,9 +26,10 @@ class VoiceClientCommands(Cog, name="Voice client"):
         self.bot = bot
         print(f"Initialized {str(__name__)}")
 
-    @command(name="join", aliases=["j", "summon"])
+    @command(name="join", aliases=["j", "summon"], description=get_text("command_join_description"),
+             help=get_text("command_join_help"))
     @guild_only()
-    # @bot_has_guild_permissions(connect=True, speak=True)
+    @bot_has_guild_permissions(connect=True, speak=True)
     @cooldown(1, 10, BucketType.guild)
     async def join(self, ctx: Context, channel: typing.Optional[str] = None):
         if ctx.voice_client and ctx.voice_client.is_connected():
@@ -61,10 +63,11 @@ class VoiceClientCommands(Cog, name="Voice client"):
                     await ctx.send(get_text("unknow_join_error"))
                 return
 
-        if destination.permissions_for(ctx.me).connect is False or destination.permissions_for(ctx.me).speak is False:
-            # await ctx.send(get_text('missing_permissions_error'))
+        if destination.permissions_for(ctx.me).connect is False:
             raise BotMissingPermissions()
-            return
+        if destination.permissions_for(ctx.me).speak is False:
+            raise BotMissingPermissions()
+
         try:
             await destination.connect(timeout=10)
             await ctx.send(f"{get_text('join')} {destination.name}")
@@ -77,10 +80,11 @@ class VoiceClientCommands(Cog, name="Voice client"):
             print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
             return
 
-
-    @command(name="disconnect", aliases=["dis", "leave", "l"])
+    @command(name="disconnect", aliases=["dis", "leave", "l"], description=get_text("command_leave_description"),
+             help=get_text("command_leave_help"))
+    @guild_only()
     @cooldown(1, 10, BucketType.user)
-    async def disconnect(self, ctx):
+    async def disconnect(self, ctx: Context):
         if ctx.voice_client:
             if ctx.voice_client.is_connected:
                 try:

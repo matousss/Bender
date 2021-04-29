@@ -3,13 +3,14 @@ import subprocess
 import discord.ext
 import discord.utils as dutils
 from discord import Message
-from discord.ext.commands import CommandNotFound, Cog, Context, CogMeta
+from discord.ext.commands import CommandNotFound, Cog, Context, CogMeta, CommandError
 
 from .message_handler import get_text
 from .temp import global_variables
 
 __all__ = ['get_channel', 'BenderModuleError', '__cogs__', 'bender_module', 'default_prefix',
-           'prefix', 'set_global_variable', 'get_global_variable', 'Checks', 'on_command_error']
+           'prefix', 'set_global_variable', 'get_global_variable', 'Checks', 'on_command_error',
+           'BotMissingPermissions']
 
 
 class Checks:
@@ -37,6 +38,13 @@ class Checks:
         return True
 
 
+class BotMissingPermissions(CommandError):
+    def __init__(self, message=None):
+        super().__init__(message or 'Bot is missing permissions for that action.')
+
+    pass
+
+
 async def on_command_error(ctx, error):
     """Default command error handler"""
     if isinstance(error, CommandNotFound):
@@ -51,7 +59,7 @@ async def on_command_error(ctx, error):
         await ctx.send(get_text("missing_parameters_error"))
     elif isinstance(error, discord.ext.commands.NoPrivateMessage):
         await ctx.send(get_text("guild_only"))
-    elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions):
+    elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions) or isinstance(error, BotMissingPermissions):
         await ctx.send(get_text("bot_missing_permissions"))
 
     else:

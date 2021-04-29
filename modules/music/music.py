@@ -84,6 +84,9 @@ class MusicPlayer(object):
         Holds now playing song
 
     lock : asyncio.Lock
+    
+    started : float, None
+        Time when player started playing. Is None when nothing is playing.
 
     """
 
@@ -99,6 +102,7 @@ class MusicPlayer(object):
         self.searcher = MusicSearcher()
         self.last_used = int(time.time())
         self.looped = False
+        self.started = None
         pass
 
     def __len__(self):
@@ -254,12 +258,12 @@ class MusicPlayer(object):
         try:
             self.voice_client.play(song.source, after=restart_play)
             self.started = int(time.time())
-        except:
+        except Exception:
             await wait_for(song.prepare_to_go(), timeout=None)
             try:
                 self.voice_client.play(song.source, after=restart_play)
                 self.started = int(time.time())
-            except:
+            except Exception:
                 raise DownloadError()
         self.now_playing = song
 
@@ -267,7 +271,7 @@ class MusicPlayer(object):
         result = None
         if return_removed:
             result = list(self._queue[:count])
-        self._queue = self._queue[:count]
+        self._queue = deque(list(self._queue[:count]))
         return result
 
     def remove_by_index(self, index: int) -> None:
@@ -425,9 +429,7 @@ class MusicSearcher(object):
                 return s
             else:
                 try:
-                    print("kokot")
                     s = MusicSearcher._youtube_dl.extract_info(f"ytsearch1:{keywords}", download=False)['entries'][0]
-                    print("lmao")
                 except:
                     return None
                 return s

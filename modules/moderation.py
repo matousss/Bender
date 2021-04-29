@@ -12,6 +12,7 @@ from utils.message_handler import get_text
 
 
 # todo check user permissions
+# todo roles
 
 @bender_module
 class Moderation(Cog):
@@ -29,7 +30,8 @@ class Moderation(Cog):
                 return True
         return False
 
-    @group(name="kick", aliases=["k"])
+    @group(name="kick", aliases=["k"], description=get_text("command_kick_description"),
+                      help=get_text("command_kick_help"))
     @guild_only()
     async def kick(self, ctx: Context):
         if ctx.invoked_subcommand is None:
@@ -104,7 +106,8 @@ class Moderation(Cog):
         return True
 
 
-    @kick.command(aliases=['a'])
+    @kick.command(aliases=['a'], description=get_text("command_kick_all_description"),
+                      help=get_text("command_kick_all_help"))
     async def all(self, ctx: Context, *, args: typing.Optional[str] = None):
         # if destination:
         #     if '<@' in destination:
@@ -176,7 +179,8 @@ class Moderation(Cog):
             return
 
 
-    @kick.command(aliases=['o'])
+    @kick.command(aliases=['o'], description=get_text("command_kick_others_description"),
+                      help=get_text("command_kick_others_help"))
     async def others(self, ctx: Context, *, args: typing.Optional[str] = None):
         destination, args = Moderation.convert_kick_args(ctx, args)
 

@@ -15,6 +15,7 @@ from utils.message_handler import get_text
 from utils.utils import prefix as _prefix, set_global_variable, default_prefix, BenderModuleError, \
     on_command_error as oce
 
+
 # todo bender logger
 
 # todo handle all exceptions
@@ -115,6 +116,9 @@ if __name__ == '__main__':
             traceback.print_exc()
             logger.exception(e)
     set_global_variable(__version__, 'version')
+
+    for c in BOT.commands:
+        print(c.name)
     print("Starting...")
 
     # if config['encrypt_token']:
