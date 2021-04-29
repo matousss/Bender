@@ -60,7 +60,8 @@ async def on_guild_join(guild):
 
 @BOT.event
 async def on_command(command):
-    print(f"<INFO> {str(command.author.name)} #{str(command.author.discriminator)} executed command {str(command.command)}")
+    print(f"<INFO> {str(command.author.name)} #{str(command.author.discriminator)} "
+          f"executed command {str(command.command)}")
 
 
 @BOT.event
@@ -88,7 +89,8 @@ if __name__ == '__main__':
     #     try:
     #         from cryptography.fernett import Fernet
     #     except ModuleNotFoundError:
-    #         logger.exception(ValueError("Token encrypting is active but required package ´cryptography.fernet´ isn't installed!"))
+    #         logger.exception(ValueError("Token encrypting is active but required package
+    #         ´cryptography.fernet´ isn't installed!"))
     #
     #
     #     if os.path.exists('/resources/token.key'):
@@ -112,7 +114,7 @@ if __name__ == '__main__':
         except Exception as e:
             traceback.print_exc()
             logger.exception(e)
-
+    set_global_variable(__version__, 'version')
     print("Starting...")
 
     # if config['encrypt_token']:

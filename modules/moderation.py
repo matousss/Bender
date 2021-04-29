@@ -93,7 +93,7 @@ class Moderation(Cog):
     @staticmethod
     async def kick_checks(ctx: Context, destination):
         if not destination:
-            await ctx.send(get_text("not_channel_error"))
+            await ctx.send(get_text("no_channel_error"))
             return False
         if not destination.permissions_for(ctx.me).move_members:
             await ctx.send(get_text("bot_missing_permissions_error"))

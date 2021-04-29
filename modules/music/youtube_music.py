@@ -77,7 +77,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
         elif isinstance(error, NotInSameChannel):
             await ctx.send(get_text("channel_not_match_error"))
         elif isinstance(error, BotNotConnected):
-            await ctx.send(get_text("not_connected_error"))
+            await ctx.send(get_text("bot_not_connected_error"))
         elif isinstance(error, UserNotConnected):
             await ctx.send(get_text("user_not_connected_error"))
         elif await oce(ctx, error):
@@ -185,8 +185,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                     await ctx.send(get_text("unknow_join_error"))
                     return
             else:
-                await ctx.send(get_text("not_connected_error"))
-                return
+                raise UserNotConnected()
 
         # check if music player for that guild exist and get it or create new player
         if str(ctx.guild.id) in self.players.keys():
@@ -296,7 +295,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                 await ctx.send(embed=embed)
 
     @commands.command(name='skip', aliases=['s'])
-    @commands.guild_only()
+    @commands.cooldown(1, .5, commands.BucketType.guild)
     async def skip(self, ctx, count: typing.Optional[int] = 1):
         if self.is_playing(ctx) or self.is_paused(ctx):
             player = self.players[str(ctx.guild.id)]
@@ -342,9 +341,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
             await ctx.send("not_playing_error")
             return
 
-    # todo remove from queue command
     @commands.command(name='remove', aliases=['rm'])
-    @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def remove(self, ctx: commands.Context, position: int, *,
                      error: typing.Optional[str] = None):
@@ -368,7 +365,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
     @commands.command(name='nowplaying', aliases=['np'])
     @commands.cooldown(1, 2, commands.BucketType.guild)
-    @commands.guild_only()
     async def nowplaying(self, ctx):
         if self.is_playing(ctx) or self.is_paused(ctx):
             player = self.players[str(ctx.guild.id)]
@@ -400,7 +396,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
     @commands.command(name='queue', aliases=['q'])
     @commands.cooldown(1, 2, commands.BucketType.guild)
-    @commands.guild_only()
     async def queue(self, ctx, page: typing.Optional[int] = None, *, not_page: typing.Optional[str] = None):
         if not_page:
             await ctx.send(get_text("no_page_error") + f" ``{page if page else '' + not_page}``")
@@ -467,7 +462,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
     @commands.command(name='pause')
     @commands.cooldown(1, 2, commands.BucketType.guild)
-    @commands.guild_only()
     async def pause(self, ctx: commands.Context):
         if self.is_playing(ctx):
             player = self.players[str(ctx.guild.id)]
@@ -484,7 +478,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
     @commands.command(name='resume')
     @commands.cooldown(1, 2, commands.BucketType.guild)
-    @commands.guild_only()
     async def resume(self, ctx: commands.Context):
         if self.is_paused(ctx):
             player = self.players[str(ctx.guild.id)]
@@ -501,7 +494,6 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
     @commands.command(name='loop')
     @commands.cooldown(1, 2, commands.BucketType.guild)
-    @commands.guild_only()
     async def loop(self, ctx: commands.Context):
         if self.is_player(ctx) and ctx.voice_client.is_connected():
             player = self.players[str(ctx.guild.id)]

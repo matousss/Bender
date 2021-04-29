@@ -52,7 +52,7 @@ async def on_command_error(ctx, error):
     elif isinstance(error, discord.ext.commands.NoPrivateMessage):
         await ctx.send(get_text("guild_only"))
     elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions):
-        await ctx.send(get_text("missing_permissions"))
+        await ctx.send(get_text("bot_missing_permissions"))
 
     else:
         return True

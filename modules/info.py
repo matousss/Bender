@@ -3,20 +3,19 @@ from discord.ext.commands import Cog, command, Context, Bot, cooldown
 __all__ = ['Info']
 
 from utils.message_handler import get_text
-from utils.utils import bender_module
-
+from utils.utils import bender_module, get_global_variable
 
 
 @bender_module
 class Info(Cog):
     def __init__(self, bot: Bot):
-        self.BOT:Bot = bot
+        self.BOT: Bot = bot
         print(f"Initialized {str(__name__)}")
 
     @command(name="info")
     @cooldown(1, 10)
     async def _info(self, ctx):
-        await ctx.send(get_text("info"))
+        await ctx.send(get_text("%s info") % get_global_variable('version'))
         pass
 
     @command(name="ping")

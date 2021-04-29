@@ -45,7 +45,7 @@ class VoiceClientCommands(Cog, name="Voice client"):
         elif ctx.author.voice and ctx.author.voice.channel:
             destination = ctx.author.voice.channel
         else:
-            await ctx.send(get_text("channel_not_specified"))
+            await ctx.send(get_text("no_channel_error"))
             return
 
         if ctx.voice_client and ctx.voice_client.is_connected() and channel is None:

@@ -91,7 +91,7 @@ async def on_command_error(ctx, error):
         await ctx.send(get_text("error_not_owner") + (ctx.author.mention) + "!")
     elif isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
         # await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
-        await ctx.send(get_text("on_cooldown_error") + " ``" + str(int(error.cooldown.per)) + "s``!")
+        await ctx.send(get_text("%s on_cooldown_error") % f"``{str(int(error.cooldown.per))}s``")
         return
     elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
         await ctx.send(get_text("missing_parameters_error"))
