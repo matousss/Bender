@@ -59,7 +59,8 @@ async def on_command_error(ctx, error):
         await ctx.send(get_text("missing_parameters_error"))
     elif isinstance(error, discord.ext.commands.NoPrivateMessage):
         await ctx.send(get_text("guild_only"))
-    elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions) or isinstance(error, BotMissingPermissions):
+    elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions) or isinstance(error,
+                                                                                            BotMissingPermissions):
         await ctx.send(get_text("bot_missing_permissions"))
 
     else:
@@ -89,13 +90,18 @@ class BenderModuleError(Exception):
 __cogs__ = []
 
 
+
 def bender_module(cog: Cog):
     if not isinstance(cog, (CogMeta, Cog)):
         raise BenderModuleError(f"bender_module must be {Cog.__name__} or {CogMeta.__name__} and not "
                                 f"{cog.__class__.__name__}")
 
-    print(f"<INFO> registered cog {cog.__name__}")
-    __cogs__.append(cog)
+    for c in __cogs__:
+        if c.__name__ == cog.__name__:
+            break
+    else:
+        __cogs__.append(cog)
+        print(f"<INFO> registered cog {cog.__name__}")
     return cog
 
 

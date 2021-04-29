@@ -3,19 +3,19 @@ import typing
 from discord import VoiceChannel
 from discord.ext.commands import Cog, command, Context, group, guild_only
 
-from utils import utils as butils
+from bender.utils import utils as butils
 
 __all__ = ['Moderation']
 
-from utils.utils import bender_module
-from utils.message_handler import get_text
+from bender.utils.utils import bender_module
+from bender.utils.message_handler import get_text
 
 
 # todo check user permissions
 # todo roles
 
 @bender_module
-class Moderation(Cog):
+class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_description")):
 
     def __init__(self, bot):
         self.bot = bot

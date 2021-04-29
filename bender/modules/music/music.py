@@ -10,8 +10,8 @@ from typing import Union
 from discord import VoiceClient
 from youtube_dl import YoutubeDL, DownloadError
 
-from . import settings
-from .song import *
+from bender.modules.music import settings
+from bender.modules.music.song import Song, SongDetails
 
 __all__ = ['MusicPlayer', 'MusicSearcher', 'NotPlaying', 'NotPaused', 'AlreadyPaused', 'AlreadyPlaying', 'NoSongToPlay',
            'NoResult', 'QueueFull', 'QueueEmpty']

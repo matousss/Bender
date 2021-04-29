@@ -8,8 +8,8 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from discord.player import FFmpegPCMAudio
 from youtube_dl import YoutubeDL
 
-from .settings import FFMPEG_OPTIONS
-from .settings import YTDL_OPTIONS
+from bender.modules.music.settings import FFMPEG_OPTIONS
+from bender.modules.music.settings import YTDL_OPTIONS
 
 __all__ = ['Song', 'SongDetails']
 

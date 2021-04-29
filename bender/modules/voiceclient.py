@@ -1,13 +1,12 @@
 import asyncio
-import traceback
 import typing
 
 from discord import VoiceChannel, ClientException
 from discord.ext.commands import Cog, BucketType, command, cooldown, Context, guild_only, bot_has_guild_permissions
 
-from utils import utils as butils
-from utils.message_handler import get_text
-from utils.utils import bender_module, BenderModuleError, BotMissingPermissions
+from bender.utils import utils as butils
+from bender.utils.message_handler import get_text
+from bender.utils.utils import bender_module, BenderModuleError, BotMissingPermissions
 
 try:
     import nacl.secret
@@ -18,7 +17,7 @@ except ImportError:
 
 
 @bender_module
-class VoiceClientCommands(Cog, name="Voice client"):
+class VoiceClientCommands(Cog, name="Voice client", description=get_text("cog_voiceclientcommands_desc")):
     def __init__(self, bot):
         if not is_nacl:
             raise BenderModuleError(f"{self.__class__.__name__} requires PyNaCl library to work with "
@@ -72,7 +71,7 @@ class VoiceClientCommands(Cog, name="Voice client"):
             await destination.connect(timeout=10)
             await ctx.send(f"{get_text('join')} {destination.name}")
             print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
-        except asyncio.TimeoutError as e:
+        except asyncio.TimeoutError:
             await ctx.send(get_text("timeout_error"))
             return
         except ClientException:
@@ -89,8 +88,7 @@ class VoiceClientCommands(Cog, name="Voice client"):
             if ctx.voice_client.is_connected:
                 try:
                     await ctx.voice_client.move_to(None)
-                except Exception as e:
+                except Exception:
                     await ctx.send(get_text("leave_error"))
-                    traceback.print_exc()
                 return
         await ctx.send(get_text("no_channel_error"))

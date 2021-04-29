@@ -16,13 +16,19 @@ from warnings import warn
 from discord import Embed, ClientException, Member
 from discord.ext import commands, tasks
 from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure
-from youtube_dl import DownloadError
 
-from global_settings import MAX_SONG_DURATION
-from modules.music.music import MusicPlayer, MusicSearcher, AlreadyPaused, NotPaused, NoResult as YTNoResult
-from modules.music.song import Song
-from utils.message_handler import get_text
-from utils.utils import bender_module, BenderModuleError, Checks, on_command_error as oce
+
+from bender.global_settings import MAX_SONG_DURATION
+from bender.modules.music.music import MusicPlayer, MusicSearcher, AlreadyPaused, NotPaused, NoResult as YTNoResult
+from bender.modules.music.song import Song
+from bender.utils.message_handler import get_text
+from bender.utils.utils import bender_module, BenderModuleError, Checks, on_command_error as oce
+
+is_youtube_dl = True
+try:
+    from youtube_dl import DownloadError
+except:
+    is_youtube_dl = False
 
 __all__ = ['YoutubeMusic']
 logger = logging.getLogger('bender')
@@ -55,7 +61,9 @@ class NotInSameChannel(CheckFailure):
 class YoutubeMusic(commands.Cog, name="Youtube Music"):
     def __init__(self, bot: commands.Bot):
         if not Checks.check_ffmpeg():
-            raise BenderModuleError(f"{self.__class__.__name__} requires ffmpeg or avconv to work properly")
+            raise BenderModuleError(f"{self.__class__.__name__} requires ffmpeg or avconv to work")
+        if not is_youtube_dl:
+            raise BenderModuleError(f"{self.__class__.__name__} requires youtube_dl to work")
         self.BOT: commands.Bot = bot
         self.players = {}
         self.join = None
@@ -222,6 +230,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
 
             # check if song isn't too long
             def check_too_long(song_to_check: Song) -> bool:
+                # todo settings
                 if song_to_check.details['duration'] > 0 and song_to_check.details['duration'] > MAX_SONG_DURATION:
                     return True
                 return False
@@ -364,7 +373,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music"):
                     except Exception:
                         await ctx.send(get_text("unknown_remove_error"))
                         raise
-                    await ctx.send(get_text("%s removed") % song_title)
+                    await ctx.send(get_text("%s removed") % f"``{song_title}``")
 
     @commands.command(name='nowplaying', aliases=['np'], description=get_text("command_nowplaying_description"),
                       help=get_text("command_nowplaying_help"))

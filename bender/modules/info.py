@@ -5,12 +5,12 @@ from discord.ext.commands import Cog, command, Context, Bot, cooldown
 
 __all__ = ['Info']
 
-from utils.message_handler import get_text
-from utils.utils import bender_module, get_global_variable
-
+from bender.utils.message_handler import get_text
+from bender.utils.utils import bender_module, get_global_variable
+from bender import __version__
 
 @bender_module
-class Info(Cog):
+class Info(Cog, name="Information", description=get_text("cog_info_description")):
     def __init__(self, bot: Bot):
         self.BOT: Bot = bot
         bot.remove_command('help')
@@ -20,7 +20,7 @@ class Info(Cog):
              help=get_text("command_info_help"))
     @cooldown(1, 10)
     async def _info(self, ctx):
-        await ctx.send(get_text("%s info") % get_global_variable('version'))
+        await ctx.send(get_text("%s info") % __version__)
         pass
 
     @command(name="ping", description=get_text("command_ping_description"),
@@ -45,8 +45,9 @@ class Info(Cog):
     @command(name="help", description=get_text("command_help_description"),
              help=get_text("command_help_help"))
     @cooldown(1, .5)
-    async def help(self, *, args: Optional[str] = None):
+    async def help(self, ctx: Context, *, args: Optional[str] = None):
         if not args:
             embed = Embed(color=0xff0000)
+
 
     pass
