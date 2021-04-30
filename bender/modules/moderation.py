@@ -1,8 +1,8 @@
 import typing
 
-from discord import VoiceChannel
-from discord.ext.commands import Cog, command, Context, group, guild_only
-from discord import utils as dutils
+from discord import VoiceChannel, Member, HTTPException
+from discord.ext.commands import Cog, Context, group, guild_only
+
 from bender.utils import utils as butils
 
 __all__ = ['Moderation']
@@ -12,7 +12,6 @@ from bender.utils.message_handler import get_text
 
 
 # todo check user permissions
-# todo roles
 
 @bender_module
 class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_description")):
@@ -30,47 +29,15 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
                 return True
         return False
 
-    @group(name="kick", aliases=["k"], description=get_text("command_kick_description"),
-           help=get_text("command_kick_help"), usage=f"[all/others] [{get_text('channel')}] <@{get_text('member')}>"
-                                                     f"<@{get_text('member')}> <@{get_text('role')}>...")
-    @guild_only()
-    async def kick(self, ctx: Context):
-        if ctx.invoked_subcommand is None:
-            await ctx.invoke(self.all)
-        pass
-
     @staticmethod
     def convert_kick_args(ctx, args):
-        # if args:
-        #
-        #     if '<@' in args:
-        #         args = args.split('<@', 1)
-        #         if len(args) > 1:
-        #             destination: str = args[0]
-        #             args = "".join(args[1].replace('>', '').split()).split('<@')
-        #         else:
-        #             destination: str = ""
-        #             args = "".join(args[0].replace('>', '').split()).split('<@')
-        #     else:
-        #         destination = args
-        #         args = None
-        #
-        #     print(args)
-        #
-        #     if not destination.isspace() and len(destination) > 0:
-        #         destination = butils.get_channel(ctx, destination)
-        #     else:
-        #         destination: VoiceChannel = ctx.author.voice.channel if (
-        #                 ctx.author.voice and ctx.author.voice.channel) else None
-        # else:
-        #     destination: VoiceChannel = ctx.author.voice.channel if (
-        #             ctx.author.voice and ctx.author.voice.channel) else None
         if args:
             print(args)
             if '<@' in args:
                 args = args.split('<@', 1)
                 if len(args) > 1:
                     destination: str = args[0].strip()
+                    args = args[1]
                 else:
                     destination: str = ""
             else:
@@ -105,86 +72,64 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
             return False
         return True
 
+    @staticmethod
+    async def move_all_members_or_with_role(_from: VoiceChannel, _to: typing.Union[VoiceChannel, None],
+                                            members: list = None, roles: list = None, inverted: bool = False):
+        kicked = 0
+        if (members and len(members) > 0) or (roles and len(roles) > 0):
+            for connected_member in _from.members:
+                for marked_member in members:
+                    if (marked_member.id == connected_member.id) != inverted:
+                        try:
+                            await connected_member.move_to(_to)
+                            kicked += 1
+                            break
+                        except HTTPException:
+                            break
+                else:
+                    for role in roles:
+                        if (role in connected_member.roles) != inverted:
+                            try:
+                                await connected_member.move_to(_to)
+                                kicked += 1
+                                break
+                            except HTTPException:
+                                break
+                    continue
+                members.remove(marked_member)
 
+        else:
+            marked = _from.members.copy()
+            for marked_member in marked:
+                marked_member: Member
+                try:
+                    await marked_member.move_to(_to)
+                    kicked += 1
+                except HTTPException:
+                    raise
 
-    @kick.command(aliases=['a'], description=get_text("command_kick_all_description"),
-                  help=get_text("command_kick_all_help"), usage=f"[{get_text('channel')}] <@{get_text('member')}>"
+        return kicked
+
+    @group(name="kick", aliases=["k"], description=get_text("command_kick_description"),
+           help=get_text("command_kick_help"), usage=f"[all/others] [{get_text('channel')}] <@{get_text('member')}>"
                                                      f"<@{get_text('member')}> <@{get_text('role')}>...")
-    async def all(self, ctx: Context, *, members: typing.Optional[str] = None):
-        # if destination:
-        #     if '<@' in destination:
-        #         destination = destination.split('<@', 1)[0]
-        #     destination = butils.get_channel(ctx, destination.lstrip())
-        # else:
-        #     if ctx.author.voice and ctx.author.voice.channel:
-        #         destination = ctx.author.voice.channel
-        #
-        # if not destination:
-        #     await ctx.send((get_text("no_channel_error")), reference=ctx.message, mention_author=False)
-        #
-        # return
-        #
-        # kicked = 0
-        # if ctx.message.mentions:
-        #     for user in ctx.message.mentions:
-        #         if user.voice and user.voice.channel and user.voice.channel.id == destination.id:
-        #             try:
-        #                 await user.move_to(None)
-        #                 kicked += 1
-        #             except:
-        #                 raise
-        #
-        # else:
-        #     if destination.members:
-        #         for user in destination.members:
-        #             try:
-        #                 await user.move_to(None)
-        #                 kicked += 1
-        #             except:
-        #                 raise
-        #     else:
-        #         await ctx.send("empty_channel")
-        #         return
-        #
-        # await ctx.send(f"{get_text('kicked')}: {kicked}")
+    @guild_only()
+    async def kick(self, ctx: Context):
+        if ctx.invoked_subcommand is None:
+            await ctx.invoke(self.all)
+        pass
 
+    @kick.command(name='all', aliases=['a'], description=get_text("command_kick_all_description"),
+                  help=get_text("command_kick_all_help"), usage=f"[{get_text('channel')}] <@{get_text('member')}>"
+                                                                f"<@{get_text('member')}> <@{get_text('role')}>...")
+    async def all(self, ctx: Context, *, members: typing.Optional[str] = None):
         destination, members, roles = Moderation.convert_kick_args(ctx, members)
         if not await Moderation.kick_checks(ctx, destination):
             return
 
         if destination.permissions_for(ctx.author).move_members:
             to_kick = len(members) if members else len(destination.members)
-            kicked = 0
-            if (members and len(members) > 0) or (roles and len(roles) > 0):
-                for connected_member in destination.members:
-                    for marked_member in members:
-                        if marked_member.id == connected_member.id:
-                            try:
-                                await connected_member.move_to(None)
-                                kicked += 1
-                                break
-                            except:
-                                break
-                    else:
-                        for role in roles:
-                            if role in connected_member.roles:
-                                try:
-                                    await connected_member.move_to(None)
-                                    kicked += 1
-                                    break
-                                except:
-                                    break
-                        continue
-                    members.remove(marked_member)
-
-            else:
-                marked = destination.members.copy()
-                for marked_member in marked:
-                    try:
-                        await marked_member.move_to(None)
-                        kicked += 1
-                    except:
-                        raise
+            kicked = await Moderation.move_all_members_or_with_role(destination, None, members, roles)
 
             await ctx.send(get_text("%s kicked") % f"{kicked}/{to_kick}")
 
@@ -192,38 +137,16 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
             await ctx.send("user_missing_permissions_error")
             return
 
-    @kick.command(aliases=['o'], description=get_text("command_kick_others_description"),
+    @kick.command(name='others', aliases=['o'], description=get_text("command_kick_others_description"),
                   help=get_text("command_kick_others_help"))
     async def others(self, ctx: Context, *, args: typing.Optional[str] = None):
-        destination, args = Moderation.convert_kick_args(ctx, args)
+        destination, members, roles = Moderation.convert_kick_args(ctx, args)
 
         if not await Moderation.kick_checks(ctx, destination):
             return
         if destination.permissions_for(ctx.author).move_members:
-            to_kick = ((len(args) if args else (len(destination.members)) -
-                                               (1 if ctx.author.voice.channel.id == destination.id else 0)))
-            kicked = 0
-            if args and len(args) > 0:
-                for member in destination.members:
-                    for m in args:
-                        if str(m) == str(member.id):
-                            break
-                    else:
-                        try:
-                            await member.move_to(None)
-                            kicked += 1
-                        except:
-                            pass
-
-            else:
-                for m in destination.members:
-                    if m.id != ctx.author.id:
-                        try:
-                            await m.move_to(None)
-                            kicked += 1
-                        except:
-                            raise
-
+            to_kick = len(destination.members)
+            kicked = await Moderation.move_all_members_or_with_role(destination, None, members, roles, inverted=True)
             await ctx.send(get_text("%s kicked") % f"{kicked}/{to_kick}")
 
         else:
@@ -231,72 +154,30 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
             return
 
     # todo rewrite
-    @command(name="move", aliases=["m", "mv"])
-    async def move(self, ctx, option: str = None, arg_source: typing.Optional[str] = "",
-                   arg_destination: typing.Optional[str] = "", *, users: typing.Optional[str] = ""):
-        get_destination = None
-        get_source = None
-        a = False
-        if option == "all" or option == "a" or option == "o" or option == "others":
-            if arg_source.startswith("<@") or arg_source == "":
-                await ctx.send("Syntax error!")
-                return
-            if arg_destination.startswith("<@") or arg_destination == "":
-                if ctx.author.voice and ctx.author.voice.channel:
-                    get_destination = arg_source
-                    source = ctx.author.voice.channel
-                    if arg_destination.startswith("<@"):
-                        users += arg_destination
-                else:
-                    await ctx.send(get_text("no_channel_error"))
-                    return
-            else:
-                get_source = arg_source
-                get_destination = arg_destination
-            if option == "all" or option == "a":
-                a = True
-            elif option == "others" or option == "o":
-                a = False
-        else:
-            a = True
-            if arg_source is None or arg_source.startswith("<@"):
-                if ctx.author.voice and ctx.author.voice.channel:
-                    get_destination = option
-                    source = ctx.author.voice.channel
-                else:
-                    await ctx.send(get_text("no_channel_error"))
-                    return
-                if arg_source.startswith("<@"):
-                    users += arg_source
-                    users += arg_destination
-            else:
-                get_source = option
-                get_destination = arg_source
-                users += arg_destination
-
-        if get_destination is not None:
-            destination = butils.getChannel(ctx, get_destination)
-
-        if get_source is not None:
-            source = butils.getChannel(ctx, get_source)
-        if source is None or not destination:
-            await ctx.send(get_text("no_channel_error"))
-            return
-        users_ids_list = None
-        force_all = False
-        if users != "":
-            users = users.replace(",", "").replace("<@!", " ").replace(">", "").replace("\n", "")
-            users = " ".join(users.split())
-            users_ids_list = users.split(" ")
-        else:
-            force_all = True
-
-        for mem in source.members:
-
-            if force_all is True or Moderation.have_match(users_ids_list, mem.id) == a:
-                await mem.move_to(destination)
-                print("<INFO> Moved user: " + str(mem) + " to " + str(destination))
-
+    @group(name="move", aliases=["mv"], description=get_text("command_move_description"),
+           help=get_text("command_move_help"), usage=f"[all/others] "
+                                                     f"[{get_text('source_channel')}] "
+                                                     f"<{get_text('destination_channel')}> "
+                                                     f"<@{get_text('member')}>"
+                                                     f"<@{get_text('member')}> <@{get_text('role')}>...")
+    @guild_only()
+    async def move(self, ctx: Context):
+        if ctx.invoked_subcommand is None:
+            await ctx.invoke(self.all)
         pass
 
-    pass
+    @kick.command(name='all', aliases=['a'], description=get_text("command_kick_all_description"),
+                  help=get_text("command_kick_all_help"), usage=f"[{get_text('source_channel')}] "
+                                                                f"<{get_text('destination_channel')}> "
+                                                                f"<@{get_text('member')}>"
+                                                                f"<@{get_text('member')}> <@{get_text('role')}>...")
+    async def all(self, ctx: Context, *, members: typing.Optional[str] = None):
+        pass
+
+    @kick.command(name='others', aliases=['o'], description=get_text("command_kick_all_description"),
+                  help=get_text("command_kick_all_help"), usage=f"[{get_text('source_channel')}] "
+                                                                f"<{get_text('destination_channel')}> "
+                                                                f"<@{get_text('member')}>"
+                                                                f"<@{get_text('member')}> <@{get_text('role')}>...")
+    async def others(self, ctx: Context, *, members: typing.Optional[str] = None):
+        pass

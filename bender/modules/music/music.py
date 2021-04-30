@@ -14,7 +14,7 @@ from bender.modules.music import settings
 from bender.modules.music.song import Song, SongDetails
 
 __all__ = ['MusicPlayer', 'MusicSearcher', 'NotPlaying', 'NotPaused', 'AlreadyPaused', 'AlreadyPlaying', 'NoSongToPlay',
-           'NoResult', 'QueueFull', 'QueueEmpty']
+           'NoResult', 'QueueFull', 'QueueEmpty', 'PlayError']
 
 
 class NotPlaying(Exception):

@@ -113,7 +113,7 @@ from discord import Activity, ActivityType, Intents
 from bender.bot import Bender
 from bender.utils.config import Config
 from bender.utils.utils import set_global_variable, default_prefix, prefix
-import bender.modules
+
 
 if __name__ == "__main__":
     for arg in sys.argv[1:]:
