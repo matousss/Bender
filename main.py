@@ -112,7 +112,7 @@ from discord import Activity, ActivityType, Intents
 
 from bender import modules
 from bender.utils import bender_utils
-from bender.utils.bender_config import Config
+from bender.utils.config import Config
 from bender.bot import Bender
 
 if __name__ == "__main__":

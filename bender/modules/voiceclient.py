@@ -17,6 +17,7 @@ except ImportError:
     is_nacl = False
 
 
+
 @bender_module
 class VoiceClientCommands(Cog, name="Voice client", description=get_text("cog_voiceclientcommands_desc")):
     def __init__(self, bot):

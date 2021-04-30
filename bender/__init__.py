@@ -1,4 +1,4 @@
-__version__ = '0.14.1b'
+__version__ = '0.15.0b0'
 
 
 __all__ = ['modules', 'utils', 'bot']

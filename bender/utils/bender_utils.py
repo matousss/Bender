@@ -100,7 +100,7 @@ def bender_module(cog: Cog):
             break
     else:
         __cogs__.append(cog)
-        print(f"<INFO> registered cog {cog.__name__}")
+        print(f"Registered cog {cog.__name__}")
     return cog
 
 

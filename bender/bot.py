@@ -1,16 +1,26 @@
 import sys
 import traceback
-import typing
 from warnings import warn
 
 from discord import Member, Role
 from discord.ext.commands import Bot, Cog, command, Greedy
 
 from bender import __version__
-from bender.utils.message_handler import get_text
 from bender.utils.bender_utils import on_command_error as oce, BenderModuleError
+from bender.utils.message_handler import get_text
 
 __all__ = ['Bender']
+
+
+def default_cogs():
+    from bender.modules import info
+    from bender.modules import moderation
+    from bender.modules import translator
+    from bender.modules import voiceclient
+    from bender.modules.music import youtube_music
+
+    return [info.Info, moderation.Moderation, translator.GoogleTranslator, voiceclient.VoiceClientCommands,
+            youtube_music.YoutubeMusic]
 
 
 class Bender(Bot):
@@ -41,8 +51,13 @@ class Bender(Bot):
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
     def setup(self):
-        from bender.utils.bender_utils import __cogs__
-        for cog in __cogs__:
+        from bender.utils.bender_utils import __cogs__ as cogs
+        if len(cogs) == 0:
+            try:
+                cogs = default_cogs()
+            except ImportError:
+                raise RuntimeError("Trying to do unsupported operation or installation is corrupted")
+        for cog in cogs:
             try:
                 cog = cog(self)
             except BenderModuleError as e:

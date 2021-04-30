@@ -16,7 +16,9 @@ class GoogleTranslator(Cog, name = 'Google Translator', description = get_text("
 
     #todo revision
     @command(name="translate", aliases=["tr"], description=get_text("command_translate_description"),
-                      help=get_text("command_translate_help"))
+                      help=get_text("command_translate_help"), usage=f"[{{{get_text('source_language')}}} "
+                                                                     f"{{{get_text('destination_language')}}}] "
+                                                                     f"<{get_text('text_to_translate')}>")
     @cooldown(1, 10, BucketType.user)
     async def translate(self, ctx, lang: str, seclang: typing.Optional[str] = "", *,
                          content: typing.Optional[str] = ""):
