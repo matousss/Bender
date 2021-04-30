@@ -6,7 +6,7 @@ from discord.ext.commands import Cog, command, Context, Bot, cooldown, Command, 
 __all__ = ['Info']
 
 from bender.utils.message_handler import get_text
-from bender.utils.utils import bender_module, prefix as _prefix
+from bender.utils.bender_utils import bender_module, prefix as _prefix
 from bender import __version__
 
 @bender_module

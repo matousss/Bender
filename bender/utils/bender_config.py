@@ -16,6 +16,8 @@ DEFAULT_CONFIG = {
         'quality': 'worst'
     }
 }
+__all__ = ['Config']
+
 
 class Config(dict):
     #
@@ -27,15 +29,12 @@ class Config(dict):
     #     with open("settings.json", "w") as file:
     #         json.dump()
 
-
-
     def __init__(self, **settings):
         if len(settings) == 0:
             settings = DEFAULT_CONFIG
 
         self.update(settings)
+        super().__init__()
 
 
 pass
-
-

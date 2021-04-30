@@ -8,7 +8,9 @@ from discord.ext.commands import Bot, Cog, command, Greedy
 
 from bender import __version__
 from bender.utils.message_handler import get_text
-from bender.utils.utils import on_command_error as oce, BenderModuleError
+from bender.utils.bender_utils import on_command_error as oce, BenderModuleError
+
+__all__ = ['Bender']
 
 
 class Bender(Bot):
@@ -39,8 +41,7 @@ class Bender(Bot):
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
     def setup(self):
-
-        from bender.utils.utils import __cogs__
+        from bender.utils.bender_utils import __cogs__
         for cog in __cogs__:
             try:
                 cog = cog(self)

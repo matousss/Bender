@@ -3,11 +3,11 @@ import typing
 from discord import VoiceChannel, Member, HTTPException
 from discord.ext.commands import Cog, Context, group, guild_only
 
-from bender.utils import utils as butils
+from bender.utils import bender_utils as butils
 
 __all__ = ['Moderation']
 
-from bender.utils.utils import bender_module
+from bender.utils.bender_utils import bender_module
 from bender.utils.message_handler import get_text
 
 
@@ -166,7 +166,7 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
             await ctx.invoke(self.all)
         pass
 
-    @kick.command(name='all', aliases=['a'], description=get_text("command_kick_all_description"),
+    @move.command(name='all', aliases=['a'], description=get_text("command_kick_all_description"),
                   help=get_text("command_kick_all_help"), usage=f"[{get_text('source_channel')}] "
                                                                 f"<{get_text('destination_channel')}> "
                                                                 f"<@{get_text('member')}>"
@@ -174,7 +174,7 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
     async def all(self, ctx: Context, *, members: typing.Optional[str] = None):
         pass
 
-    @kick.command(name='others', aliases=['o'], description=get_text("command_kick_all_description"),
+    @move.command(name='others', aliases=['o'], description=get_text("command_kick_all_description"),
                   help=get_text("command_kick_all_help"), usage=f"[{get_text('source_channel')}] "
                                                                 f"<{get_text('destination_channel')}> "
                                                                 f"<@{get_text('member')}>"

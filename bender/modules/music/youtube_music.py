@@ -16,13 +16,13 @@ from warnings import warn
 from discord import Embed, ClientException, Member, Forbidden
 from discord.ext import commands, tasks
 from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure
-
-from bender.global_settings import MAX_SONG_DURATION
+#todo config
+MAX_SONG_DURATION = 7200
 from bender.modules.music.music import MusicPlayer, MusicSearcher, AlreadyPaused, NotPaused, NoResult as YTNoResult, \
     PlayError
 from bender.modules.music.song import Song
 from bender.utils.message_handler import get_text
-from bender.utils.utils import bender_module, BenderModuleError, Checks, on_command_error as oce
+from bender.utils.bender_utils import bender_module, BenderModuleError, Checks, on_command_error as oce
 
 is_youtube_dl = True
 try:

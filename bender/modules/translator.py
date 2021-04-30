@@ -5,7 +5,7 @@ from googletrans import Translator
 
 __all__ = ['GoogleTranslator']
 
-from bender.utils.utils import bender_module
+from bender.utils.bender_utils import bender_module
 from bender.utils.message_handler import get_text
 
 @bender_module

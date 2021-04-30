@@ -4,9 +4,10 @@ import typing
 from discord import VoiceChannel, ClientException
 from discord.ext.commands import Cog, BucketType, command, cooldown, Context, guild_only, bot_has_guild_permissions
 
-from bender.utils import utils as butils
+
 from bender.utils.message_handler import get_text
-from bender.utils.utils import bender_module, BenderModuleError, BotMissingPermissions
+from bender.utils.bender_utils import bender_module, BenderModuleError, BotMissingPermissions, \
+    get_channel as _get_channel
 
 try:
     import nacl.secret
@@ -38,7 +39,7 @@ class VoiceClientCommands(Cog, name="Voice client", description=get_text("cog_vo
             if isinstance(channel, VoiceChannel):
                 destination = channel
             else:
-                destination = butils.get_channel(ctx, channel)
+                destination = _get_channel(ctx, channel)
                 if not destination:
                     await ctx.send(f'{get_text("no_channel")}: {channel}')
                     return

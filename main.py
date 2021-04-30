@@ -110,23 +110,23 @@ import sys
 
 from discord import Activity, ActivityType, Intents
 
+from bender import modules
+from bender.utils import bender_utils
+from bender.utils.bender_config import Config
 from bender.bot import Bender
-from bender.utils.config import Config
-from bender.utils.utils import set_global_variable, default_prefix, prefix
-
 
 if __name__ == "__main__":
     for arg in sys.argv[1:]:
         print(arg)
-
-    config = set_global_variable(Config(), 'config')
+    config = Config()
+    config = bender_utils.set_global_variable(config, 'config')
 
     # todo token encryption
     intents = Intents.default()
     intents.members = True
     print("Loading...")
-    bot = Bender(command_prefix=prefix, intents=intents,
-                 activity=Activity(type=ActivityType.listening, name=f"{default_prefix()}help"))
+    bot = Bender(command_prefix=bender_utils.prefix, intents=intents,
+                 activity=Activity(type=ActivityType.listening, name=f"{bender_utils.default_prefix()}help"))
     bot.setup()
     print("Starting...")
 

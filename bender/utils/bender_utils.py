@@ -90,7 +90,6 @@ class BenderModuleError(Exception):
 __cogs__ = []
 
 
-
 def bender_module(cog: Cog):
     if not isinstance(cog, (CogMeta, Cog)):
         raise BenderModuleError(f"bender_module must be {Cog.__name__} or {CogMeta.__name__} and not "
@@ -117,8 +116,9 @@ def default_prefix() -> str:
 
 
 # noinspection PyUnusedLocal
-def prefix(bot = None, message: Message = None) -> str:
-    if not message: return prefixes[-1]
+def prefix(bot=None, message: Message = None) -> str:
+    if not message:
+        return prefixes[-1]
     try:
         if message.guild:
             return prefixes[message.guild.id]
