@@ -42,13 +42,13 @@ class GoogleTranslator(Cog, name='Google Translator', description=get_text("cog_
             if lang.endswith("}"):
                 destlang = lang.replace("{", "").replace("}", "")
             else:
-                await ctx.send(get_text("%s invalid_argument") % destlang)
+                await ctx.send(get_text("%s invalid_argument") % f"``{destlang}``")
                 return
             if seclang.startswith("{"):
                 if seclang.endswith("}"):
                     srclang = seclang.replace("{", "").replace("}", "")
                 else:
-                    await ctx.send(get_text("%s invalid_argument") % seclang)
+                    await ctx.send(get_text("%s invalid_argument") % f"``{seclang}``")
             else:
                 content = seclang + " " + content
         else:
@@ -58,7 +58,7 @@ class GoogleTranslator(Cog, name='Google Translator', description=get_text("cog_
             try:
                 product = translator.translate(content, dest=destlang)
             except ValueError:
-                await ctx.send(get_text("%s translate_error_invalid_code") % destlang)
+                await ctx.send(get_text("%s translate_error_invalid_code") % f"``{destlang}``")
                 return
         else:
             try:

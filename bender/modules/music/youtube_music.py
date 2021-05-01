@@ -11,7 +11,7 @@ import traceback
 import typing
 from warnings import warn
 
-from discord import Embed, ClientException, Member, Forbidden
+from discord import Embed, ClientException, Member, Forbidden, VoiceState
 from discord.ext import commands, tasks
 from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure
 
@@ -110,7 +110,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
             warn(message)
             self.BOT.remove_cog(self.qualified_name)
 
-    def is_player(self, arg: typing.Union[commands.Context, int]) -> bool:
+    def is_player(self, arg: typing.Union[commands.Context, str]) -> bool:
         if isinstance(arg, commands.Context):
             return arg.guild.id in self.players.keys() and self.players[arg.guild.id] is not None
 
@@ -120,6 +120,14 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
         else:
             raise ValueError(f"arg must be {int.__name__} or {commands.Context.__name__} "
                              f"and not {arg.__class__.__name__}")
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
+        if member.id == self.BOT.user.id and before.channel and after.channel \
+                and before.channel.id != after.channel.id:
+            if self.is_player(member.guild.id):
+                player = self.players[member.guild.id]
+                player.voice_client = member.guild.voice_client
 
     @tasks.loop(minutes=1)
     async def garbage_collector(self):
@@ -217,7 +225,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
                 raise UserNotConnected()
 
         # check if music player for that guild exist and get it or create new player
-        if str(ctx.guild.id) in self.players.keys():
+        if ctx.guild.id in self.players.keys():
             player: MusicPlayer = self.players[ctx.guild.id]
         else:
             self.players[ctx.guild.id] = MusicPlayer(ctx.voice_client)
@@ -225,14 +233,16 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
 
         async with player.lock:
             if ctx.voice_client and ctx.voice_client.is_connected():
-                if ctx.author.voice.channel:
-                    if ctx.voice_client.channel.id == ctx.author.voice.channel:
-                        await ctx.send(get_text("playing_error_different_channel"))
-                else:
-                    await ctx.send(get_text("user_not_connected"))
+                if ctx.author.voice.channel and ctx.voice_client.channel.id != ctx.author.voice.channel.id:
+                    await ctx.send(get_text("playing_error_different_channel"))
                     return
+            else:
+                await ctx.send(get_text("user_not_connected"))
+                return
             # find song
-            await ctx.send(get_text("searching"))
+
+            message = await ctx.send(get_text("searching"))
+
 
             loop = asyncio.get_running_loop()
 
@@ -246,7 +256,10 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
             if not song:
                 await ctx.send(get_text("not_found_error"))
 
-            await ctx.send(get_text("found"))
+            if message and message.channel:
+                await message.edit(content=get_text("found"))
+            else:
+                await ctx.send()
 
             # check if song isn't too long
             def check_too_long(song_to_check: Song) -> bool:
@@ -257,12 +270,12 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
 
             if isinstance(song, Song):
                 if check_too_long(song):
-                    await ctx.send(get_text('%s error_too_long') % YoutubeMusic.format_song_details(song))
+                    await ctx.send(get_text('%s error_too_long') % f"``{YoutubeMusic.format_song_details(song)}``")
                     return
             elif isinstance(song, list):
                 for s in song:
                     if check_too_long(s):
-                        await ctx.send(get_text('%s error_too_long') % YoutubeMusic.format_song_details(s))
+                        await ctx.send(get_text('%s error_too_long') % f"``{YoutubeMusic.format_song_details(s)}``")
                         song.remove(s)
 
             else:
@@ -291,19 +304,19 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
                 try:
                     player.add_song(first)
                 except QueueFull:
-                    await ctx.send(get_text('%s queue_full') % f"(0 / {(len(song) + 1)}")
+                    await ctx.send(get_text('%s queue_full') % f"``(0 / {(len(song) + 1)}``")
                     return
                 await start_playing()
 
                 not_added = await player.add_songs(song)
                 if len(not_added) > 0:
-                    await ctx.send(get_text('%s queue_full') % f"{len(song)}/{len(not_added)}")
+                    await ctx.send(get_text('%s queue_full') % f"``{len(song)}/{len(not_added)}``")
                     return
                 await ctx.send(get_text('%s added_to_queue') % f"``{count}``")
 
             else:
                 will_play = False
-                if len(player) == 0:
+                if not player.now_playing:
                     will_play = True
                 try:
                     player.add_song(song)
@@ -372,7 +385,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
     async def remove(self, ctx: commands.Context, position: int, *,
                      error: typing.Optional[str] = None):
         if error:
-            await ctx.send(get_text("%s invalid_argument") % f"{position} {error}")
+            await ctx.send(get_text("%s no_page_error") % f"``{position} {error}``")
             return
         if self.is_playing(ctx) or self.is_paused(ctx):
             player = self.players[ctx.guild.id]
@@ -478,7 +491,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
         else:
             sb = get_text('emptiness')
         if len(queue) > index:
-            sb += get_text('%d queue_more') % (len(queue) - index)
+            sb += get_text('%d queue_more') % f"``{(len(queue) - index)}``"
         embed.add_field(name=f"{get_text('%d in_queue')}" % len(queue),
                         value=sb,
                         inline=False)

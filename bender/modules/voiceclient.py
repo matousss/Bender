@@ -34,8 +34,8 @@ class VoiceClientCommands(Cog, name="Voice client", description=get_text("cog_vo
     @cooldown(1, 10, BucketType.guild)
     async def join(self, ctx: Context, *, channel: typing.Optional[str] = None):
         if ctx.voice_client and ctx.voice_client.is_connected():
-            raise ClientException("Already connected to voice channel")
-
+            # raise ClientException("Already connected to voice channel")
+            await ctx.send(get_text("already_connected_error"))
         if channel is not None:
             if isinstance(channel, VoiceChannel):
                 destination = channel

@@ -23,7 +23,7 @@ class Info(Cog, name="Information", description=get_text("cog_info_description")
              help=get_text("command_info_help"), usage="")
     @cooldown(1, 10)
     async def _info(self, ctx):
-        await ctx.send(get_text("%s info") % bender.__version__)
+        await ctx.send(get_text("%s info") % f'``{bender.__version__}``')
         pass
 
     @command(name="ping", description=get_text("command_ping_description"),

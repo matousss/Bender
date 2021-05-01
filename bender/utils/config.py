@@ -15,7 +15,9 @@ DEFAULT_CONFIG = {
     'YT_Music': {
         'max_queue_size': 20,
         'max_song_length': 7200,
-        'best_quality': False
+        'best_quality': False,
+        'max_idle_time': 180,
+        'max_paused_time': 360
     }
 }
 __all__ = ['Config']

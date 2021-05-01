@@ -37,7 +37,6 @@
 #                    activity=discord.Activity(type=discord.ActivityType.listening, name=f"{default_prefix()}help"))
 #
 #
-# # todo help command
 #
 #
 # # events

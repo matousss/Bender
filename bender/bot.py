@@ -2,6 +2,7 @@ import sys
 import traceback
 from warnings import warn
 
+import discord
 from discord import Member, Role
 from discord.ext.commands import Bot, Cog, command, Greedy
 
@@ -76,6 +77,8 @@ class Bender(Bot):
 
     @staticmethod
     @command(name="traktor")
-    async def traktor(ctx, memebers: Greedy[Member], roles: Greedy[Role]):
-        print(f"members: {str(memebers)} roles: {str(roles)}")
-        await ctx.send(f"members: {str(memebers)} roles: {str(roles)}")
+    async def traktor(ctx, *, args):
+        print(ctx.message.content)
+
+        print(args)
+        print(discord.utils.escape_mentions(args))

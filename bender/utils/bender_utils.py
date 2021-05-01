@@ -18,7 +18,7 @@ class Checks:
     @staticmethod
     async def can_join_speak(ctx: discord.ext.commands.Context):
         return ctx.me.guild_permissions.speak and ctx.me.guild_permissions.connect
-
+    # todo ffmpeg path
     # noinspection PyBroadException
     @staticmethod
     def check_ffmpeg() -> bool:

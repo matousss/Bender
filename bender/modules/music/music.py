@@ -254,10 +254,7 @@ class MusicPlayer(object):
 
                 return
             except VoiceClientError:
-                print("<INFO> Bot was kicked by user or lost connection to channel")
-
-
-
+                print("<INFO> Bot was kicked or lost connection to the channel")
 
         if not song.source:
             await wait_for(song.prepare_to_go(), timeout=None)
