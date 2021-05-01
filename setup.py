@@ -1,6 +1,6 @@
-from setuptools import setup
+import setuptools
 
-setup(
+setuptools.setup(
     name='bender',
     version='0.15.0b0',
     packages=['bender', 'bender.utils', 'bender.modules'],
@@ -10,3 +10,4 @@ setup(
     author_email='jaroslav.matous@student.gyarab.cz',
     description='Bender - Multipurpose Discord bot'
 )
+

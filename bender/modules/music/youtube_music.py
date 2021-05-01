@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import datetime
 import functools
 import logging
@@ -16,7 +17,7 @@ from discord.ext import commands, tasks
 from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure
 
 import bender.utils.bender_utils
-from bender.modules.music.music import MusicPlayer, MusicSearcher, AlreadyPaused, NotPaused, NoResult as YTNoResult, \
+from bender.modules.music.music import MusicPlayer, AlreadyPaused, NotPaused, NoResult as YTNoResult, \
     PlayError, QueueFull, QueueEmpty
 from bender.modules.music.song import Song
 from bender.utils.bender_utils import BenderModuleError, Checks
@@ -59,6 +60,16 @@ class NotInSameChannel(CheckFailure):
     pass
 
 
+DEFAULT_CONFIG = {
+    'ffmpeg_avconv_path': None,
+    'max_queue_size': 20,
+    'max_song_length': 7200,
+    'best_quality': False,
+    'max_idle_time': 180,
+    'max_paused_time': 360
+}
+
+
 @bender.utils.bender_utils.bender_module
 class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog_youtubemusic_description")):
     def __init__(self, bot: commands.Bot):
@@ -70,7 +81,24 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
         self.players = {}
         self.join = None
         self.garbage_collector.start()
+        self.config = copy.deepcopy(DEFAULT_CONFIG)
+        self.player_config = copy.deepcopy(bender.modules.music.music.DEFAULT_PLAYER_CONFIG)
+
         print(f"Initialized {str(__name__)}")
+
+    def set_config(self, **kwargs):
+        for key in kwargs.keys():
+            if key in self.config:
+                self.config[key] = kwargs[key]
+            else:
+                raise ValueError("Unexpected keyword argument: %s" % key)
+
+    def set_player_config(self, **kwargs):
+        for key in kwargs.keys():
+            if key in self.config:
+                self.player_config[key] = kwargs[key]
+            else:
+                raise ValueError("Unexpected keyword argument: %s" % key)
 
     def cog_unload(self):
         self.garbage_collector.cancel()
@@ -100,6 +128,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
 
     @commands.Cog.listener()
     async def on_ready(self):
+        bender.modules.music.music.MusicSearcher.initialize_ytdl(self.player_config['YTDL_OPTIONS'])
 
         self.join = self.BOT.get_command('join')
 
@@ -110,6 +139,9 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
             warn(message)
             self.BOT.remove_cog(self.qualified_name)
 
+        if not bender.modules.music.music.MusicSearcher.initialized():
+            warn(f"{bender.modules.music.music.MusicSearcher.__name__} is not initialized")
+
     def is_player(self, arg: typing.Union[commands.Context, str]) -> bool:
         if isinstance(arg, commands.Context):
             return arg.guild.id in self.players.keys() and self.players[arg.guild.id] is not None
@@ -118,7 +150,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
             return arg in self.players.keys() and self.players[arg] is not None
 
         else:
-            raise ValueError(f"arg must be {int.__name__} or {commands.Context.__name__} "
+            raise TypeError(f"arg must be {int.__name__} or {commands.Context.__name__} "
                              f"and not {arg.__class__.__name__}")
 
     @commands.Cog.listener()
@@ -215,7 +247,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
     async def play(self, ctx: commands.Context, *, what: str):
         # check if in voice channel, connect to some if not
         if not ctx.voice_client or not ctx.voice_client.is_connected():
-            if isinstance(ctx.author, Member) and ctx.author.voice and ctx.author.voice.channel:
+            if ctx.author.voice and ctx.author.voice.channel:
                 try:
                     await asyncio.wait_for(ctx.invoke(self.join, channel=ctx.author.voice.channel), timeout=10)
                 except asyncio.TimeoutError:
@@ -243,12 +275,11 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
 
             message = await ctx.send(get_text("searching"))
 
-
             loop = asyncio.get_running_loop()
 
-            task = loop.run_in_executor(None, functools.partial(MusicSearcher.search_song, what))
+            task = loop.run_in_executor(None, functools.partial(bender.modules.music.music.MusicSearcher.search_song,
+                                                                what))
 
-            # task = player.searcher.search_song_async(what)
             try:
                 song = await asyncio.wait_for(task, timeout=None)
             except Exception:
@@ -351,10 +382,10 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
                             player.remove(count - 1)
                             if player.looped:
                                 player.looped = False
-                                await ctx.voice_client.stop()
+                                ctx.voice_client.stop()
                                 player.looped = True
                             else:
-                                await ctx.voice_client.stop()
+                                ctx.voice_client.stop()
                         else:
                             player.remove(count)
 
@@ -458,7 +489,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
             return
 
         embed = Embed(color=0xff0000)
-
+        embed.title = get_text('queue')
         index = page * PAGE_SIZE - PAGE_SIZE
 
         if page == pages:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import sys
 import time
 import traceback
@@ -15,6 +16,11 @@ from bender.modules.music.song import Song, SongDetails
 
 __all__ = ['MusicPlayer', 'MusicSearcher', 'NotPlaying', 'NotPaused', 'AlreadyPaused', 'AlreadyPlaying', 'NoSongToPlay',
            'NoResult', 'QueueFull', 'QueueEmpty', 'PlayError']
+
+DEFAULT_PLAYER_CONFIG = {
+    'YTDL_OPTIONS': copy.deepcopy(settings.YTDL_OPTIONS),
+    'FFMPEG_OPTIONS': copy.deepcopy(settings.FFMPEG_OPTIONS)
+}
 
 
 class NotPlaying(Exception):
@@ -36,8 +42,10 @@ class AlreadyPlaying(Exception):
     """Raised by MusicPlayer.play() when audio is already playing"""
     pass
 
+
 class PlayError(Exception):
     pass
+
 
 class VoiceClientError(Exception):
     """Raised by MusicPlayer on error with voice_client"""
@@ -92,19 +100,20 @@ class MusicPlayer(object):
 
     """
 
+    # todo max len
     def __init__(self, voice_client: VoiceClient, queue: deque = deque()):
         if not isinstance(voice_client, VoiceClient):
-            raise ValueError(f"voice_client can't be {voice_client.__class__.__name__}")
+            raise TypeError(f"voice_client can't be {voice_client.__class__.__name__}")
         if not isinstance(queue, deque):
-            raise ValueError(f"queue can't be {queue.__class__.__name__}")
+            raise TypeError(f"queue can't be {queue.__class__.__name__}")
         self.voice_client = voice_client
         self._queue = queue
         self.now_playing = None
         self.lock = Lock()
-        self.searcher = MusicSearcher()
         self.last_used = int(time.time())
         self.looped = False
         self.started = None
+
         pass
 
     def __len__(self):
@@ -130,7 +139,7 @@ class MusicPlayer(object):
         QueueFull
             Queue of player is full"""
         if not isinstance(item, Song):
-            raise ValueError(f"Accept only {Song.__name__} and not {item.__class__.__name__}")
+            raise TypeError(f"Accept only {Song.__name__} and not {item.__class__.__name__}")
         if self._queue.maxlen == len(self._queue):
             raise QueueFull("Player queue is full")
         self._queue.append(item)
@@ -148,27 +157,11 @@ class MusicPlayer(object):
         QueueEmpty
             Queue of player is empty
 
-        ValueError
+        TypeError
             Variable in songs isn't :class: Song
         """
 
-        # try:
-        #     while len(songs) > 0:
-        #         song = songs.pop(0)
-        #         if isinstance(song, Song):
-        #             try:
-        #                 self.add_song(song)
-        #                 # taks = self.add_song_nowait(song)
-        #                 # await wait_for(task, timeout=None)
-        #
-        #             except QueueFull:
-        #                 songs.insert(0, song)
-        #                 raise
-        #         else:
-        #             raise ValueError(f"Accept only {Song.__name__} and not {song.__class__.__name__}")
-        #
-        # finally:
-        #     return songs
+
 
         if self._queue.maxlen and len(songs) + len(self._queue) > self._queue.maxlen:
             self.add_song(songs[:(self._queue.maxlen - len(self._queue))])
@@ -219,7 +212,7 @@ class MusicPlayer(object):
 
     async def play(self) -> None:
         if not self.voice_client:
-            raise ValueError("voice_client can't be Null")
+            raise TypeError("voice_client can't be Null")
         elif not self.voice_client.is_connected():
             raise VoiceClientError("Not connected")
         elif self.voice_client.is_playing():
@@ -230,6 +223,7 @@ class MusicPlayer(object):
         song = await self.get_next()
 
         if not song:
+            song: None
             print(f"{str(self)} finished job!")
 
             return
@@ -240,7 +234,10 @@ class MusicPlayer(object):
 
             # https://discordpy.readthedocs.io/en/stable/faq.html#how-do-i-pass-a-coroutine-to-the-player-s-after-function
             if self.looped:
+                song.source = None
                 self.add_song(song)
+
+            self.now_playing = None
             if error:
                 print(f'Ignoring exception in method music.MusicPlayer.play.restart_play in  object'
                       f' {str(self.__hash__())}', file=sys.stderr)
@@ -271,10 +268,13 @@ class MusicPlayer(object):
         self.now_playing = song
 
     def remove(self, count: int = 1, return_removed: bool = False) -> Union[None, list]:
+
         result = None
+        if count == 0:
+            return
         if return_removed:
             result = list(self._queue[:count])
-        self._queue = deque(list(self._queue[:count]))
+        self._queue = deque(list(self._queue)[:count])
         return result
 
     def remove_by_index(self, index: int) -> None:
@@ -293,7 +293,7 @@ class MusicPlayer(object):
         """
         try:
             del self._queue[index - 1]
-        except:
+        except Exception:
             raise
 
     def queue_empty(self) -> bool:
@@ -383,7 +383,7 @@ class MusicPlayer(object):
         """
         try:
             return self._queue[index]
-        except:
+        except Exception:
             raise
 
     def clear(self) -> None:
@@ -392,12 +392,22 @@ class MusicPlayer(object):
         """
         self._queue.clear()
 
-class MusicSearcher(object):
+
+class MusicSearcher:
     """
     Search audio on youtube using youtube-dl
     """
 
-    _youtube_dl = YoutubeDL(settings.YTDL_OPTIONS)
+    _youtube_dl = None
+
+    @staticmethod
+    def initialized():
+        return MusicSearcher._youtube_dl is not None
+
+    @staticmethod
+    def initialize_ytdl(options: dict = settings.YTDL_OPTIONS):
+
+        MusicSearcher._youtube_dl = YoutubeDL(options)
 
     @staticmethod
     def search_song(text: str, retry: int = 2) -> Union[Song, list[Song]]:
@@ -433,14 +443,13 @@ class MusicSearcher(object):
             else:
                 try:
                     s = MusicSearcher._youtube_dl.extract_info(f"ytsearch1:{keywords}", download=False)['entries'][0]
-                except:
+                except Exception:
                     return None
                 return s
 
         result = search(text)
         while retry > 0 and result is None:
             result = search(text)
-            print(f"Pokus: {retry}")
             retry -= 1
 
         if not result:

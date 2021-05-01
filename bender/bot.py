@@ -21,7 +21,6 @@ def default_cogs():
     return [info.Info, moderation.Moderation, translator.GoogleTranslator, voiceclient.VoiceClientCommands,
             youtube_music.YoutubeMusic]
 
-
 class Bender(Bot):
     async def on_ready(self):
         print("\n\n" + f'{self.user} has connected to Discord!\n\n')
@@ -48,7 +47,7 @@ class Bender(Bot):
             return False
 
         if await bender.utils.bender_utils.on_command_error(ctx, error):
-            print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
+            print(f'Ignoring exception in command {ctx.command}:', file=sys.stderr)
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
     def setup(self):
@@ -72,6 +71,8 @@ class Bender(Bot):
             except Exception as e:
                 print('Ignoring exception:', file=sys.stderr)
                 traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
+
+
 
         self.add_command(self.traktor)
 

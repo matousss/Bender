@@ -17,12 +17,7 @@
 #
 #
 #
-# # todo handle all exceptions
-#
-#
-#
-# # todo text translations
-# # todo turn to app
+
 #
 # # logger
 # logger = logging.getLogger('discord')
@@ -80,7 +75,7 @@
 #
 #     config = set_global_variable(Config(), 'config')
 #
-#     # todo token encryption
+#
 #
 #     from bender.utils.utils import __cogs__
 #
@@ -105,28 +100,93 @@
 #     # if config['encrypt_token']:
 #
 #     BOT.run(config['token'])
+import asyncio
+import os
+import pathlib
 import sys
+from pathlib import Path
 
-from discord import Activity, ActivityType, Intents
+import discord
+import discord.ext.commands
 
-from bender import modules
+from bender.bot import Bender
 from bender.utils import bender_utils
 from bender.utils.config import Config
-from bender.bot import Bender
+
+# todo config
+# todo settings
+# todo texts
+# todo pydoc
+HELP = 'WIP'
+
+def load_token(path: os.path):
+    if os.path.exists(path):
+        with open(path, 'rt') as file:
+            lines = file.readlines()
+        return lines
+    else:
+        raise ValueError("Given path doesn't exist")
+
+async def start(token: str , bot: discord.ext.commands.Bot, is_bot: bool = True):
+    try:
+        await bot.login(token, bot=is_bot)
+    except discord.LoginFailure:
+        print("Login token is invalid", file=sys.stderr)
+        input("Press enter to continue...")
+        return
+    except discord.HTTPException:
+        print("Cannot reach Discord, please check your internet connection", file=sys.stderr)
+        input("Press enter to continue...")
+        return
+    await bot.connect(reconnect=True)
 
 if __name__ == "__main__":
-    for arg in sys.argv[1:]:
-        print(arg)
+    token = None
+    if len(sys.argv) > 1:
+        if len(sys.argv) > 3:
+            print("Too much arguments! Try run with --help.")
+            exit(0)
+
+        if sys.argv[1] == "--help":
+            print(HELP)
+            exit(0)
+        elif sys.argv[1] == "--token":
+            token = sys.argv[2]
+
+    if not token:
+        path = pathlib.Path(__file__).parent.joinpath("./token.cfg")
+        try:
+            loaded = load_token(path)
+            if len(loaded) > 1:
+                print(f"File {path} have invalid content. It must have one line with token!",  file=sys.stderr)
+                exit(0)
+            else:
+                token = loaded[0]
+
+        except ValueError:
+            print("Root directory must contain token.cfg with Discord token or token must be specified as argument:"
+                  " --token <token>", file=sys.stderr)
+            exit(0)
     config = Config()
     config = bender_utils.set_global_variable(config, 'config')
 
     # todo token encryption
-    intents = Intents.default()
+    intents = discord.Intents.default()
     intents.members = True
     print("Loading...")
     bot = Bender(command_prefix=bender_utils.prefix, intents=intents,
-                 activity=Activity(type=ActivityType.listening, name=f"{bender_utils.default_prefix()}help"))
+                 activity=discord.Activity(type=discord.ActivityType.listening, name=f"{bender_utils.default_prefix()}help"))
     bot.setup()
     print("Starting...")
 
-    bot.run(config['token'])
+    loop = asyncio.get_event_loop()
+    task = start(token, bot)
+    try:
+        loop.run_until_complete(task)
+    except KeyboardInterrupt:
+        loop.run_until_complete(bot.close())
+        loop.close()
+
+
+
+
