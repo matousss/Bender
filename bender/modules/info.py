@@ -5,12 +5,14 @@ from discord.ext.commands import Cog, command, Context, Bot, cooldown, Command, 
 
 __all__ = ['Info']
 
-from bender.utils.message_handler import get_text
-from bender.utils.bender_utils import bender_module, prefix as _prefix
-from bender import __version__
+import bender.utils.message_handler
+import bender.utils.bender_utils
+import bender
+
+get_text = bender.utils.message_handler.get_text
 
 
-@bender_module
+@bender.utils.bender_utils.bender_module
 class Info(Cog, name="Information", description=get_text("cog_info_description")):
     def __init__(self, bot: Bot):
         self.BOT: Bot = bot
@@ -21,7 +23,7 @@ class Info(Cog, name="Information", description=get_text("cog_info_description")
              help=get_text("command_info_help"), usage="")
     @cooldown(1, 10)
     async def _info(self, ctx):
-        await ctx.send(get_text("%s info") % __version__)
+        await ctx.send(get_text("%s info") % bender.__version__)
         pass
 
     @command(name="ping", description=get_text("command_ping_description"),
@@ -45,21 +47,33 @@ class Info(Cog, name="Information", description=get_text("cog_info_description")
                 embed.set_footer(text=get_text("command_help_tips"))
         elif args == "commands":
             embed.title = get_text("possible_commands")
-            embed.description = ""
+            embed.set_footer(text=get_text("possible_command_tips"))
+            for cog in ctx.bot.cogs:
+                commands = ""
+                cog = ctx.bot.get_cog(cog)
+                for _command in cog.walk_commands():
+                    # if _command.parent and isinstance(_command.parent, Group):
+                    #     continue
+                    commands += f"``{_command.qualified_name}``, "
+                embed.add_field(name=cog.qualified_name, value=commands[:-2])
+            commands = ""
             for _command in ctx.bot.walk_commands():
-                if _command.parent and isinstance(_command.parent, Group):
-                    continue
-                embed.description += f"``{_command.name}``\n"
+                if not _command.cog:
+                    commands += f"``{_command.qualified_name}``, "
+            if len(commands) > 0:
+                embed.add_field(name=get_text("no_category"), value=commands[:-2])
+
         else:
             args = args.lower()
             for _cog in ctx.bot.cogs:
+                _cog: str
                 if args == _cog.lower():
                     _cog: Cog = ctx.bot.get_cog(_cog)
                     embed.title = get_text("%s showing_help_for") % _cog.qualified_name
                     embed.description = _cog.description
                     commands = ''
                     for _command in _cog.walk_commands():
-                        commands += f"``{_command.name}``, "
+                        commands += f"``{_command.qualified_name}``, "
                     commands = commands[:-2]
 
                     embed.add_field(name=get_text("possible_commands"), value=commands)
@@ -81,7 +95,7 @@ class Info(Cog, name="Information", description=get_text("cog_info_description")
                 embed.title = get_text("%s showing_help_for") % _command.name
                 embed.description = _command.description if _command.description else "NaN"
                 if _command.usage is not None:
-                    embed.add_field(name=get_text("command_usage"), value=f"{_prefix(message=ctx.message)} "
+                    embed.add_field(name=get_text("command_usage"), value=f"{ctx.bot.command_prefix()}"
                                                                           f"{_command.qualified_name} "
                                                                           f"{_command.usage}",
                                     inline=False)

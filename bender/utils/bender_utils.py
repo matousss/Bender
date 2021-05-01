@@ -1,21 +1,22 @@
 import subprocess
 
-import discord.ext
-import discord.utils as dutils
-from discord import Message
-from discord.ext.commands import CommandNotFound, Cog, Context, CogMeta, CommandError
+import discord.ext.commands
+import discord
+# from discord.ext.commands import CommandNotFound, Cog, Context, CogMeta, CommandError
 
-from bender.utils.message_handler import get_text
-from bender.utils.temp import global_variables
+import bender.utils.message_handler
 
-__all__ = ['get_channel', 'BenderModuleError', '__cogs__', 'bender_module', 'default_prefix',
+
+__all__ = ['BenderModuleError', '__cogs__', 'bender_module', 'default_prefix',
            'prefix', 'set_global_variable', 'get_global_variable', 'Checks', 'on_command_error',
            'BotMissingPermissions']
+
+from bender.utils.temp import global_variables
 
 
 class Checks:
     @staticmethod
-    async def can_join_speak(ctx: Context):
+    async def can_join_speak(ctx: discord.ext.commands.Context):
         return ctx.me.guild_permissions.speak and ctx.me.guild_permissions.connect
 
     # noinspection PyBroadException
@@ -38,7 +39,7 @@ class Checks:
         return True
 
 
-class BotMissingPermissions(CommandError):
+class BotMissingPermissions(discord.ext.commands.CommandError):
     def __init__(self, message=None):
         super().__init__(message or 'Bot is missing permissions for that action.')
 
@@ -47,34 +48,35 @@ class BotMissingPermissions(CommandError):
 
 async def on_command_error(ctx, error):
     """Default command error handler"""
-    if isinstance(error, CommandNotFound):
-        # await ctx.send(get_text("command_not_found_error"))
+    if isinstance(error, discord.ext.commands.CommandNotFound):
+        # await ctx.send(bender.utils.message_handler.get_text("command_not_found_error"))
         pass
     elif isinstance(error, discord.ext.commands.errors.NotOwner):
-        await ctx.send(get_text("%s error_not_owner") % ctx.author.mention)
+        await ctx.send(bender.utils.message_handler.get_text("%s error_not_owner") % ctx.author.mention)
     elif isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
         # await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
-        await ctx.send(get_text("%s on_cooldown_error") % f" ``{str(int(error.cooldown.per))}s``")
+        await ctx.send(bender.utils.message_handler.get_text("%s on_cooldown_error") % f" ``{str(int(error.cooldown.per))}s``")
     elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
-        await ctx.send(get_text("missing_parameters_error"))
+        await ctx.send(bender.utils.message_handler.get_text("missing_parameters_error"))
+        return True
     elif isinstance(error, discord.ext.commands.NoPrivateMessage):
-        await ctx.send(get_text("guild_only"))
+        await ctx.send(bender.utils.message_handler.get_text("guild_only"))
     elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions) or isinstance(error,
                                                                                             BotMissingPermissions):
-        await ctx.send(get_text("bot_missing_permissions"))
+        await ctx.send(bender.utils.message_handler.get_text("bot_missing_permissions"))
 
     else:
         return True
     return False
 
-
-def get_channel(ctx: Context, channel: str):
-    if channel.startswith("<#"):
-        return dutils.get(ctx.guild.channels, id=int(channel[2:].replace(">", "")))
-    elif channel.isnumeric():
-        return dutils.get(ctx.guild.channels, id=int(channel))
-    else:
-        return dutils.get(ctx.guild.channels, name=channel)
+#
+# def get_channel(ctx: Context, channel: str):
+#     if channel.startswith("<#"):
+#         return discord.utils.get(ctx.guild.channels, id=int(channel[2:].replace(">", "")))
+#     elif channel.isnumeric():
+#         return discord.utils.get(ctx.guild.channels, id=int(channel))
+#     else:
+#         return discord.utils.get(ctx.guild.channels, name=channel)
 
 
 class BenderModuleError(Exception):
@@ -90,9 +92,10 @@ class BenderModuleError(Exception):
 __cogs__ = []
 
 
-def bender_module(cog: Cog):
-    if not isinstance(cog, (CogMeta, Cog)):
-        raise BenderModuleError(f"bender_module must be {Cog.__name__} or {CogMeta.__name__} and not "
+def bender_module(cog: discord.ext.commands.Cog):
+    if not isinstance(cog, (discord.ext.commands.CogMeta, discord.ext.commands.Cog)):
+        raise BenderModuleError(f"bender_module must be {discord.ext.commands.Cog.__name__} "
+                                f"or {discord.ext.commands.CogMeta.__name__} and not "
                                 f"{cog.__class__.__name__}")
 
     for c in __cogs__:
@@ -116,7 +119,7 @@ def default_prefix() -> str:
 
 
 # noinspection PyUnusedLocal
-def prefix(bot=None, message: Message = None) -> str:
+def prefix(bot=None, message: discord.Message = None) -> str:
     if not message:
         return prefixes[-1]
     try:

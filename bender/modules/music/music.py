@@ -230,7 +230,7 @@ class MusicPlayer(object):
         song = await self.get_next()
 
         if not song:
-            print(f"{str(self)} is idle")
+            print(f"{str(self)} finished job!")
 
             return
         song: Song

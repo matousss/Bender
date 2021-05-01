@@ -9,20 +9,20 @@ import sys
 import time
 import traceback
 import typing
-from asyncio import QueueEmpty
-from asyncio.queues import QueueFull
 from warnings import warn
 
 from discord import Embed, ClientException, Member, Forbidden
 from discord.ext import commands, tasks
 from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure
-#todo config
-MAX_SONG_DURATION = 7200
+
+import bender.utils.bender_utils
 from bender.modules.music.music import MusicPlayer, MusicSearcher, AlreadyPaused, NotPaused, NoResult as YTNoResult, \
-    PlayError
+    PlayError, QueueFull, QueueEmpty
 from bender.modules.music.song import Song
-from bender.utils.message_handler import get_text
-from bender.utils.bender_utils import bender_module, BenderModuleError, Checks, on_command_error as oce
+from bender.utils.bender_utils import BenderModuleError, Checks
+
+# todo config
+MAX_SONG_DURATION = 7200
 
 is_youtube_dl = True
 try:
@@ -32,6 +32,8 @@ except Exception:
 
 __all__ = ['YoutubeMusic']
 logger = logging.getLogger('bender')
+
+get_text = bender.utils.message_handler.get_text
 
 PAGE_SIZE = 10
 
@@ -57,7 +59,7 @@ class NotInSameChannel(CheckFailure):
     pass
 
 
-@bender_module
+@bender.utils.bender_utils.bender_module
 class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog_youtubemusic_description")):
     def __init__(self, bot: commands.Bot):
         if not Checks.check_ffmpeg():
@@ -88,7 +90,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
             await ctx.send(get_text("bot_not_connected_error"))
         elif isinstance(error, UserNotConnected):
             await ctx.send(get_text("user_not_connected_error"))
-        elif await oce(ctx, error):
+        elif await bender.utils.bender_utils.on_command_error(ctx, error):
             try:
                 await ctx.send(get_text("unexpected_error"))
             except Forbidden:
@@ -110,10 +112,10 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
 
     def is_player(self, arg: typing.Union[commands.Context, int]) -> bool:
         if isinstance(arg, commands.Context):
-            return arg.guild.id in self.players.keys() and self.players[arg.guild.id]
+            return arg.guild.id in self.players.keys() and self.players[arg.guild.id] is not None
 
         elif isinstance(arg, int):
-            return arg in self.players.keys() and self.players[arg]
+            return arg in self.players.keys() and self.players[arg] is not None
 
         else:
             raise ValueError(f"arg must be {int.__name__} or {commands.Context.__name__} "
@@ -125,8 +127,9 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
         keys = list(self.players.keys())
         for key in keys:
             player = self.players[key]
-            if player.voice_client.is_playing():
+            if player.voice_client.is_playing() and len(player.voice_client.channel.members) > 1:
                 player.last_used = int(time.time())
+                continue
             if (not player.voice_client.is_paused() and t - player.last_used > 120) or t - player.last_used > 300:
                 if player.voice_client.is_connected():
                     await player.voice_client.disconnect()
@@ -136,10 +139,12 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description=get_text("cog
         del keys
         for voice_client in self.BOT.voice_clients:
             if not self.is_player(voice_client.guild.id):
-                try:
-                    await voice_client.disconnect()
-                except Exception:
-                    pass
+                await asyncio.sleep(5)
+                if not self.is_player(voice_client.guild.id):
+                    try:
+                        await voice_client.disconnect()
+                    except Exception:
+                        pass
 
     def can_play(self, ctx: commands.Context) -> bool:
         return self.is_player(ctx) and ctx.voice_client.is_connected()
