@@ -1,7 +1,7 @@
 import typing
 
 import discord.utils as discord_utils
-from discord import VoiceChannel, Member, HTTPException
+from discord import VoiceChannel, Member, HTTPException, Message
 from discord.ext.commands import Cog, Context, group, guild_only
 
 __all__ = ['Moderation']
@@ -16,30 +16,6 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
     def __init__(self, bot):
         self.bot = bot
         print(f"Initialized {str(__name__)}")
-
-    @staticmethod
-    def convert_kick_args(ctx, args) -> (VoiceChannel, list, list):
-        members, roles, destination = None, None, None
-        if args:
-            if '<@' in args:
-                args = args.split('<@', 1)
-                if len(ctx.message.mentions) > 0 or len(ctx.message.role_mentions) > 0:
-                    members = ctx.message.mentions
-                    roles = ctx.message.role_mentions
-                else:
-                    members, roles = None, None
-
-                if len(args) > 1:
-                    destination_name = args[0].strip()
-                else:
-                    destination_name = ""
-            else:
-                destination_name = args
-
-            if not destination_name.isspace() and len(destination_name) > 0:
-                destination = discord_utils.get(ctx.guild.channels, name=destination_name)
-
-        return destination, members, roles
 
     @staticmethod
     async def channel_check(ctx: Context, destination, *, can_be_empty: bool = False):
@@ -102,6 +78,15 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
         head, _sep, tail = source_string.rpartition(replace_what)
         return head + replace_with + tail
 
+    @staticmethod
+    def get_raw_channels(message: Message, source_string):
+        channel_names = source_string
+        for mention in message.mentions:
+            channel_names = Moderation.replace_last(channel_names, f'<@!{mention.id}>', '')
+        for mention in message.role_mentions:
+            channel_names = Moderation.replace_last(channel_names, f'<@&{mention.id}>', '')
+        return channel_names
+
     @group(name="kick", aliases=["k"], description=get_text("command_kick_description"),
            help=get_text("command_kick_help"), usage=f"[all/others] [{get_text('channel')}] [@{get_text('member')}]"
                                                      f" [@{get_text('member')}] [@{get_text('role')}]...")
@@ -123,7 +108,10 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
 
     @staticmethod
     async def kick_command(ctx, args, *, inverted: bool = False):
-        destination, members, roles = Moderation.convert_kick_args(ctx, args)
+        destination_name = Moderation.get_raw_channels(ctx.message, args)
+        destination = discord_utils.get(ctx.guild.channels, name=Moderation.get_raw_channels(ctx.message, args))
+        members = ctx.message.mentions
+        roles = ctx.message.role_mentions
 
         if not destination:
             destination: VoiceChannel = ctx.author.voice.channel if (
@@ -133,6 +121,8 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
         if len(destination.members) == 0:
             await ctx.send(get_text("channel_empty"))
             return
+        if len(members) == 0 and inverted:
+            members = [ctx.author]
         if destination.permissions_for(ctx.author).move_members:
             to_kick = len(destination.members)
             kicked = await Moderation.move_all_members_or_with_role(destination, None, members, roles,
@@ -177,42 +167,9 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
                                  args=args)
         pass
 
-    # todo try replace ;
     @staticmethod
     async def move_command(ctx, args, inverted: bool = False):
-        channel_names_raw = args
-        for mention in ctx.message.mentions:
-            channel_names_raw = Moderation.replace_last(channel_names_raw, f'<@!{mention.id}>', '')
-        for mention in ctx.message.role_mentions:
-            channel_names_raw = Moderation.replace_last(channel_names_raw, f'<@&{mention.id}>', '')
-
-        # if args and ';' in args:
-        #     args = args.split(';')
-        #     if len(args) > 2:
-        #         await ctx.send(get_text("move_all_use_chars_instead"))
-        #         return
-        #
-        #     _from = discord_utils.get(ctx.guild.channels, name=args[0].strip())
-        #     print(args[0].strip())
-        #     if not _from:
-        #         _from = discord_utils.get(ctx.guild.channels, name=args[0].strip().replace('.|', ';'))
-        #     if ("<@&", "<@!") in args[1]:
-        #         to_channel_name = args[1].split('<@!', 1)[0].lstrip()
-        #         _to, members, roles = Moderation.convert_kick_args(ctx, args)
-        #         if not _to:
-        #             _to = discord_utils.get(ctx.guild.channels, name=to_channel_name.strip().replace('.|', ';'))
-        #
-        #     else:
-        #         members, roles = None, None
-        #         _to = discord_utils.get(ctx.guild.channels, name=args[1].strip())
-        #
-        # else:
-        #     _from = ctx.author.voice.channel if ctx.author.voice and ctx.author.voice.channel else None
-        #     to_channel_name = args[1].split('<@')[0].lstrip()
-        #     print(to_channel_name)
-        #     _to, members, roles = Moderation.convert_kick_args(ctx, args)
-        #     if not _to:
-        #         _to = discord_utils.get(ctx.guild.channels, name=to_channel_name.strip().replace('.|', ';'))
+        channel_names_raw = Moderation.get_raw_channels(ctx.message, args)
         if ';' in channel_names_raw:
             channel_names = channel_names_raw.split(';', 1)
             _from = discord_utils.get(ctx.guild.channels, name=channel_names[0].strip())
@@ -221,7 +178,6 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
                 _from = discord_utils.get(ctx.guild.channels, name=channel_names[0].replace('.|', ';').lstrip())
             if not _to:
                 _to = discord_utils.get(ctx.guild.channels, name=channel_names[1].replace('.|', ';').lstrip())
-
 
         else:
             _from = ctx.author.voice.channel if ctx.author.voice and ctx.author.voice.channel else None
@@ -235,7 +191,7 @@ class Moderation(Cog, name="Moderation", description=get_text("cog_moderation_de
         if _from and _to and _from.id == _to.id:
             await ctx.send(get_text("same_channels_error"))
 
-        if inverted and not len(members) == 0:
+        if inverted and len(members) == 0:
             members = [ctx.author]
         if await Moderation.channel_check(ctx, _from) and await Moderation.channel_check(ctx, _to, can_be_empty=True):
             to_move = len(_from.members)
