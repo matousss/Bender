@@ -34,7 +34,7 @@ def setup(bot: Bot):
 #
 
 
-class VoiceClientCommands(Cog, name="Voice client", description="cog_voiceclientcommands_desc"):
+class VoiceClientCommands(Cog, name="Voice client", description="cog_voiceclientcommands_description"):
     def __init__(self, bot):
         if not is_nacl:
             raise bender.utils.bender_utils.BenderModuleError(
@@ -45,7 +45,7 @@ class VoiceClientCommands(Cog, name="Voice client", description="cog_voiceclient
         print(f"Initialized {str(self.__class__.__name__)}")
 
     @command(name="join", aliases=["j", "summon"], description="command_join_description",
-             usage="")
+             usage="command_join_usage")
     @guild_only()
     @cooldown(1, 10, BucketType.guild)
     async def join(self, ctx: Context, *, channel: typing.Optional[str] = None):
@@ -97,7 +97,7 @@ class VoiceClientCommands(Cog, name="Voice client", description="cog_voiceclient
             print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
             return
 
-    @command(name="disconnect", aliases=["dis", "leave", "l"], description="command_leave_description",
+    @command(name="disconnect", aliases=["dis", "leave", "l"], description="command_disconnect_description",
              usage="")
     @guild_only()
     @cooldown(1, 10, BucketType.user)

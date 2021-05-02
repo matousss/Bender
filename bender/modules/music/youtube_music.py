@@ -254,7 +254,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description="cog_youtubem
                f" [{str(datetime.timedelta(seconds=duration)) if duration > 0 else '<NaN>'}]"
 
     @commands.command(name="play", aliases=["p"], description="command_play_description",
-                      usage=f"<url/{get_text('song_title')}>")
+                      usage="command_play_usage")
     @commands.check(Checks.can_join_speak)
     @commands.cooldown(rate=1, per=3, type=commands.BucketType.guild)
     async def play(self, ctx: commands.Context, *, what: str):
@@ -377,7 +377,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description="cog_youtubem
                 await ctx.send(embed=embed)
 
     @commands.command(name='skip', aliases=['s'], description="command_skip_description",
-                      usage=f"[{get_text('count')}]")
+                      usage="command_skip_usage")
     @commands.cooldown(1, .5, commands.BucketType.guild)
     async def skip(self, ctx, count: typing.Optional[int] = 1):
         if self.is_playing(ctx) or self.is_paused(ctx):
@@ -425,7 +425,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description="cog_youtubem
             return
 
     @commands.command(name='remove', aliases=['rm'], description="command_remove_description",
-                      usage=f"<{get_text('position_in_queue')}>")
+                      usage="command_remove_usage")
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def remove(self, ctx: commands.Context, position: int, *,
                      error: typing.Optional[str] = None):
@@ -481,7 +481,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description="cog_youtubem
             await ctx.send(get_text("unknow_playing_error"))
 
     @commands.command(name='queue', aliases=['q'], description="command_queue_description",
-                      usage=f"<{get_text('page')}>")
+                      usage="command_queue_usage")
     @commands.cooldown(1, 2, commands.BucketType.guild)
     async def queue(self, ctx, page: typing.Optional[int] = None, *, not_page: typing.Optional[str] = None):
         if not_page:

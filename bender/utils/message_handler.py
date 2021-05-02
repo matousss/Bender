@@ -1,20 +1,21 @@
 import gettext
-
-# https://phrase.com/blog/posts/translate-python-gnu-gettext/
-
-
 # el = gettext.translation('base', localedir='locales', languages=['el'])
 # el.install()
 import os
+import pathlib
+
+import bender.utils.temp
+
+# https://phrase.com/blog/posts/translate-python-gnu-gettext/
 
 locales = dict()
 
 
-def get_text(args: str):
+def get_text(args: str, *, language = 'en'):
     if args.startswith('%'):
         print(f"<DEBUG> Asked for: {args}")
 
-    return gettext.gettext(args)
+    return locales[language].gettext(args)
 
 
 def load_translations(path: os.PathLike):
@@ -27,12 +28,16 @@ def load_translations(path: os.PathLike):
 
 
 class MessageHandler(object):
-    def __init__(self, dir: str = "locales"):
-        gettext.find('base', 'locales')
+    def __init__(self, dir: os.PathLike = pathlib.Path("locales")):
+        gettext.find('messages', dir)
 
 
-load_translations("D:\\_Files\\PycharmProjects\\bender\\locales")
+def setup():
 
-for l in locales:
-    locales[l].install()
-get_text = locales['en'].gettext
+    load_translations(pathlib.Path(os.path.join(bender.utils.temp.get_root_path(), "resources\\locales")))
+    global locales
+    for l in locales:
+        locales[l].install()
+
+    global get_text
+    get_text = locales['en'].gettext

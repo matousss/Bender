@@ -3,15 +3,14 @@ import traceback
 from warnings import warn
 
 import discord
-from discord import Member, Role
-from discord.ext.commands import Bot, Cog, command, Greedy
+from discord import Guild, Forbidden, HTTPException
+from discord.ext.commands import Bot, Cog, command
 
 import bender
 import bender.modules
 import bender.modules.music.youtube_music
 
 __all__ = ['Bender']
-
 
 
 class Bender(Bot):
@@ -26,14 +25,17 @@ class Bender(Bot):
         print(f"\n\n{self.user.name} is running!\n\n")
 
     @staticmethod
-    async def on_guild_join(guild):
+    async def on_guild_join(guild: Guild):
         if guild.system_channel:
-            await guild.system_channel.send(bender.utils.message_handler.get_text('on_join'))
+            try:
+                await guild.system_channel.send(bender.utils.message_handler.get_text('on_join'))
+            except (Forbidden, HTTPException):
+                pass
 
     @staticmethod
-    async def on_command(cmd):
-        print(f"<INFO> {str(cmd.author.name)} #{str(cmd.author.discriminator)} "
-              f"executed command {str(cmd.command)}")
+    async def on_command(ctx: discord.ext.commands.Context):
+        print(f"<INFO> {str(ctx.author.name)}#{str(ctx.author.discriminator)}"
+              f"executed command {str(ctx.command)} in {ctx.guild}#{ctx.guild.id}")
 
     async def on_command_error(self, ctx, error):
         cog = ctx.cog
@@ -67,8 +69,10 @@ class Bender(Bot):
     #             traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
 
     def setup(self):
+        bender.utils.message_handler.setup()
+
         extensions = [bender.modules.info, bender.modules.moderation, bender.modules.voiceclient,
-                      bender.modules.settings, bender.modules.translator,bender.modules.music.youtube_music]
+                      bender.modules.settings, bender.modules.translator, bender.modules.music.youtube_music]
         for extension in extensions:
             try:
                 extension.setup(self)
@@ -82,8 +86,6 @@ class Bender(Bot):
                 print('Ignoring exception:', file=sys.stderr)
                 traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
                 continue
-
-
 
         self.add_command(self.traktor)
 

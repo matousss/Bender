@@ -1,3 +1,5 @@
+import os
+
 import discord.ext.commands
 from discord.ext.commands import Bot
 
@@ -8,7 +10,12 @@ get_text = bender.utils.message_handler.get_text
 
 
 def setup(bot: Bot):
+
+
+
+
     bot.add_cog(Settings(bot))
+
 
 
 #

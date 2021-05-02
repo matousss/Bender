@@ -103,8 +103,7 @@ class Moderation(Cog, name="Moderation", description="cog_moderation_description
         return channel_names
 
     @group(name="kick", aliases=["k"], description="command_kick_description",
-           usage=f"[all/others] [{get_text('channel')}] [@{get_text('member')}]"
-                 f" [@{get_text('member')}] [@{get_text('role')}]...")
+           usage="command_kick_usage")
     @guild_only()
     async def kick(self, ctx: Context):
         if ctx.invoked_subcommand is None:
@@ -142,28 +141,25 @@ class Moderation(Cog, name="Moderation", description="cog_moderation_description
             to_kick = len(destination.members)
             kicked = await Moderation.move_all_members_or_with_role(destination, None, members, roles,
                                                                     inverted=inverted)
-            await ctx.send(get_text("%s %s kicked") % (f"``{kicked}/{to_kick}``", f"``destination.name``"))
+            await ctx.send(get_text("%s %s kicked") % (f"``{kicked}/{to_kick}``", f"``{destination.name}``"))
 
         else:
             await ctx.send("user_missing_permissions_error")
             return
 
-    @kick.command(name='all', aliases=['a'], description="command_kick_all_description",
-                  usage=f"[{get_text('channel')}] [@{get_text('member')}]"
-                        f"[@{get_text('member')}] [@{get_text('role')}]...")
+    @kick.command(name='all', aliases=['a', ' '], description="command_kick_all_description",
+                  usage="command_kick_all_usage")
     async def kick_all(self, ctx: Context, *, args: typing.Optional[str] = None):
         await Moderation.kick_command(ctx, args)
 
     @kick.command(name='others', aliases=['o'], description="command_kick_others_description",
-                  usage=f"[{get_text('channel')}] [@{get_text('member')}]"
-                        f"[@{get_text('member')}] [@{get_text('role')}]...")
+                  usage="command_kick_others_usage")
     async def kick_others(self, ctx: Context, *, args: typing.Optional[str] = None):
         print("makám")
         await Moderation.kick_command(ctx, args, inverted=True)
 
     @group(name="move", aliases=["mv"], description="command_move_description",
-           usage=f"[all/others] [{get_text('source_channel')}] <{get_text('destination_channel')}> "
-                 f"<@{get_text('member')}> <@{get_text('member')}> <@{get_text('role')}>...")
+           usage="command_move_usage")
     @guild_only()
     async def move(self, ctx: Context):
         if ctx.invoked_subcommand is None:
@@ -208,20 +204,14 @@ class Moderation(Cog, name="Moderation", description="cog_moderation_description
         if await Moderation.channel_check(ctx, _from) and await Moderation.channel_check(ctx, _to, can_be_empty=True):
             to_move = len(_from.members)
             moved = await Moderation.move_all_members_or_with_role(_from, _to, members, roles, inverted=inverted)
-            await ctx.send(get_text("%s %s moved") % (f"``{moved}/{to_move}``", f"``_to.name``"))
+            await ctx.send(get_text("%s %s moved") % (f"``{moved}/{to_move}``", f"``{_to.name}``"))
 
-    @move.command(name='all', aliases=['a', ''], description="command_kick_all_description",
-                  usage=f"[{get_text('source_channel')};] "
-                        f"<{get_text('destination_channel')}> "
-                        f"<@{get_text('member')}> "
-                        f"<@{get_text('member')}> <@{get_text('role')}>...")
+    @move.command(name='all', aliases=['a', ' '], description="command_move_all_description",
+                  usage="command_move_all_usage")
     async def move_all(self, ctx: Context, *, args: typing.Optional[str] = None):
         await self.move_command(ctx, args)
 
-    @move.command(name='others', aliases=['o'], description="command_kick_all_description",
-                  usage=f"[{get_text('source_channel')};] "
-                        f"<{get_text('destination_channel')}> "
-                        f"<@{get_text('member')}> "
-                        f"<@{get_text('member')}> <@{get_text('role')}>...")
+    @move.command(name='others', aliases=['o'], description="command_move_others_description",
+                  usage="command_move_others_usage")
     async def move_others(self, ctx: Context, *, args: typing.Optional[str] = None):
         await self.move_command(ctx, args, True)

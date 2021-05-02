@@ -159,6 +159,9 @@ async def start(_token: str, _bot: discord.ext.commands.Bot, is_bot: bool = True
 
 
 if __name__ == "__main__":
+    import bender.utils.temp as _temp
+    _temp.set_root_path(pathlib.Path(__file__).parent)
+
     token = None
     if len(sys.argv) > 1:
         if len(sys.argv) > 3:
