@@ -1,0 +1,420 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-05-02 13:26+0200\n"
+"PO-Revision-Date: 2021-05-02 13:28+0100\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: \n"
+"X-Generator: Eazy Po 0.9.5.3\n"
+
+#: modules/music/youtube_music.py:525
+#, python-format
+msgid "%d queue_more"
+msgstr ""
+
+#: modules/music/youtube_music.py:346
+#, python-format
+msgid "%s added_to_queue"
+msgstr ""
+
+#: utils/bender_utils.py:58
+#, python-format
+msgid "%s error_not_owner"
+msgstr ""
+
+#: modules/music/youtube_music.py:304 modules/music/youtube_music.py:309
+#, python-format
+msgid "%s error_too_long"
+msgstr ""
+
+#: modules/info.py:57
+#, python-format
+msgid "%s info"
+msgstr ""
+
+#: modules/translator.py:45 modules/translator.py:51
+#, python-format
+msgid "%s invalid_argument"
+msgstr ""
+
+#: modules/voiceclient.py:89
+#, python-format
+msgid "%s join"
+msgstr ""
+
+#: modules/moderation.py:130
+#, python-format
+msgid "%s %s kicked"
+msgstr ""
+
+#: modules/moderation.py:199
+#, python-format
+msgid "%s %s moved"
+msgstr ""
+
+#: modules/music/youtube_music.py:419 modules/music/youtube_music.py:474
+#: modules/music/youtube_music.py:488
+#, python-format
+msgid "%s no_page_error"
+msgstr ""
+
+#: utils/bender_utils.py:61
+#, python-format
+msgid "%s on_cooldown_error"
+msgstr ""
+
+#: modules/info.py:65
+#, python-format
+msgid "%s ping"
+msgstr ""
+
+#: modules/music/youtube_music.py:338 modules/music/youtube_music.py:344
+#, python-format
+msgid "%s queue_full"
+msgstr ""
+
+#: modules/music/youtube_music.py:434
+#, python-format
+msgid "%s removed"
+msgstr ""
+
+#: modules/info.py:103 modules/info.py:126
+#, python-format
+msgid "%s showing_help_for"
+msgstr ""
+
+#: modules/translator.py:61
+#, python-format
+msgid "%s translate_error_invalid_code"
+msgstr ""
+
+#: modules/info.py:134
+msgid "aliases"
+msgstr ""
+
+#: modules/voiceclient.py:38
+msgid "already_connected_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:546
+msgid "already_paused_error"
+msgstr ""
+
+#: modules/moderation.py:26 utils/bender_utils.py:70
+msgid "bot_missing_permissions_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:118
+msgid "bot_not_connected_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:223
+msgid "channel"
+msgstr ""
+
+#: modules/moderation.py:122
+msgid "channel_empty"
+msgstr ""
+
+#: modules/music/youtube_music.py:116
+msgid "channel_not_match_error"
+msgstr ""
+
+#: modules/translator.py:22
+msgid "cog_googletranslator_description"
+msgstr ""
+
+#: modules/info.py:47
+msgid "cog_info_description"
+msgstr ""
+
+#: modules/moderation.py:14
+msgid "cog_moderation_description"
+msgstr ""
+
+#: modules/settings.py:11
+msgid "cog_settings_description"
+msgstr ""
+
+#: modules/voiceclient.py:22
+msgid "cog_voiceclientcommands_desc"
+msgstr ""
+
+#: modules/music/youtube_music.py:74
+msgid "cog_youtubemusic_description"
+msgstr ""
+
+#: modules/info.py:67
+msgid "command_help_description"
+msgstr ""
+
+#: modules/info.py:78
+msgid "command_help_tips"
+msgstr ""
+
+#: modules/info.py:53
+msgid "command_info_description"
+msgstr ""
+
+#: modules/voiceclient.py:31
+msgid "command_join_description"
+msgstr ""
+
+#: modules/moderation.py:136 modules/moderation.py:201
+#: modules/moderation.py:209
+msgid "command_kick_all_description"
+msgstr ""
+
+#: modules/moderation.py:90
+msgid "command_kick_description"
+msgstr ""
+
+#: modules/moderation.py:142
+msgid "command_kick_others_description"
+msgstr ""
+
+#: modules/voiceclient.py:84
+msgid "command_leave_description"
+msgstr ""
+
+#: modules/music/youtube_music.py:570
+msgid "command_loop_description"
+msgstr ""
+
+#: modules/moderation.py:149
+msgid "command_move_description"
+msgstr ""
+
+#: modules/music/youtube_music.py:436
+msgid "command_nowplaying_description"
+msgstr ""
+
+#: modules/music/youtube_music.py:536
+msgid "command_pause_description"
+msgstr ""
+
+#: modules/info.py:60
+msgid "command_ping_description"
+msgstr ""
+
+#: modules/music/youtube_music.py:243
+msgid "command_play_description"
+msgstr ""
+
+#: modules/music/youtube_music.py:469
+msgid "command_queue_description"
+msgstr ""
+
+#: modules/music/youtube_music.py:413
+msgid "command_remove_description"
+msgstr ""
+
+#: modules/music/youtube_music.py:553
+msgid "command_resume_description"
+msgstr ""
+
+#: modules/music/youtube_music.py:365
+msgid "command_skip_description"
+msgstr ""
+
+#: modules/translator.py:31
+msgid "command_translate_description"
+msgstr ""
+
+#: modules/info.py:129
+msgid "command_usage"
+msgstr ""
+
+#: modules/music/youtube_music.py:523
+msgid "emptiness"
+msgstr ""
+
+#: modules/moderation.py:29
+msgid "empty_channel_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:456
+msgid "ends_in"
+msgstr ""
+
+#: modules/music/youtube_music.py:291
+msgid "found"
+msgstr ""
+
+#: utils/bender_utils.py:67
+msgid "guild_only"
+msgstr ""
+
+#: modules/info.py:75
+msgid "help_categories"
+msgstr ""
+
+#: modules/info.py:76
+msgid "help_categories_description"
+msgstr ""
+
+#: modules/voiceclient.py:56
+msgid "join_error_same_channel"
+msgstr ""
+
+#: modules/voiceclient.py:94
+msgid "leave_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:580
+msgid "loop_off"
+msgstr ""
+
+#: modules/music/youtube_music.py:578
+msgid "loop_on"
+msgstr ""
+
+#: utils/bender_utils.py:64
+msgid "missing_parameters_error"
+msgstr ""
+
+#: modules/info.py:95
+msgid "no_category"
+msgstr ""
+
+#: modules/info.py:123
+msgid "no_category_or_command"
+msgstr ""
+
+#: modules/moderation.py:23 modules/voiceclient.py:51
+#: modules/voiceclient.py:96
+msgid "no_channel_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:113
+msgid "no_result"
+msgstr ""
+
+#: modules/music/youtube_music.py:288
+msgid "not_found_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:563
+msgid "not_paused_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:582
+msgid "not_playing"
+msgstr ""
+
+#: modules/music/youtube_music.py:361 modules/music/youtube_music.py:454
+#: modules/music/youtube_music.py:509
+msgid "now_playing"
+msgstr ""
+
+#: bot.py:38
+msgid "on_join"
+msgstr ""
+
+#: modules/music/youtube_music.py:462 modules/music/youtube_music.py:544
+msgid "paused"
+msgstr ""
+
+#: modules/music/youtube_music.py:323
+msgid "play_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:269
+msgid "playing_error_different_channel"
+msgstr ""
+
+#: modules/music/youtube_music.py:360
+msgid "position"
+msgstr ""
+
+#: modules/music/youtube_music.py:424
+msgid "position_error"
+msgstr ""
+
+#: modules/info.py:81
+msgid "possible_command_tips"
+msgstr ""
+
+#: modules/info.py:80 modules/info.py:110
+msgid "possible_commands"
+msgstr ""
+
+#: modules/music/youtube_music.py:492
+msgid "queue"
+msgstr ""
+
+#: modules/music/youtube_music.py:355
+msgid "queue_full"
+msgstr ""
+
+#: modules/music/youtube_music.py:397
+msgid "queue_size_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:561
+msgid "resumed"
+msgstr ""
+
+#: modules/moderation.py:192
+msgid "same_channels_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:276
+msgid "searching"
+msgstr ""
+
+#: modules/music/youtube_music.py:225
+msgid "song_duration"
+msgstr ""
+
+#: modules/info.py:141
+msgid "subcommands"
+msgstr ""
+
+#: modules/voiceclient.py:77
+msgid "timeout_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:220
+msgid "title"
+msgstr ""
+
+#: modules/music/youtube_music.py:111
+msgid "track_stacked"
+msgstr ""
+
+#: modules/translator.py:68
+msgid "translate_error_invalid_code"
+msgstr ""
+
+#: modules/music/youtube_music.py:123
+msgid "unexpected_error"
+msgstr ""
+
+#: modules/voiceclient.py:64 modules/music/youtube_music.py:254
+msgid "unknow_join_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:467
+msgid "unknow_playing_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:432
+msgid "unknown_remove_error"
+msgstr ""
+
+#: modules/music/youtube_music.py:120 modules/music/youtube_music.py:272
+msgid "user_not_connected_error"
+msgstr ""

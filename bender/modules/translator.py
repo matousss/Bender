@@ -1,7 +1,6 @@
 import typing
 
-
-from discord.ext.commands import Cog, BucketType, command, cooldown
+from discord.ext.commands import Cog, BucketType, command, cooldown, Bot
 
 import bender.utils.bender_utils
 from bender.utils.message_handler import get_text
@@ -14,12 +13,26 @@ try:
 except ImportError:
     is_googletrans = False
 
-
 __all__ = ['GoogleTranslator']
 
 
-@bender.utils.bender_utils.bender_module
-class GoogleTranslator(Cog, name='Google Translator', description=get_text("cog_googletranslator_description")):
+def setup(bot: Bot):
+    bot.add_cog(GoogleTranslator(bot))
+
+
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+
+
+class GoogleTranslator(Cog, name='Google Translator', description="cog_googletranslator_description"):
     def __init__(self, bot):
         if not is_googletrans:
             raise bender.utils.bender_utils.BenderModuleError(
@@ -28,11 +41,11 @@ class GoogleTranslator(Cog, name='Google Translator', description=get_text("cog_
         print(f"Initialized {str(__name__)}")
 
     # todo revision
-    @command(name="translate", aliases=["tr"], description=get_text("command_translate_description"),
-             help=get_text("command_translate_help"), usage=f"[{{{get_text('source_language')}}} "
-                                                            f"[{{{get_text('destination_language')}}}]] "
-                                                            f"<{get_text('text_to_translate')}>")
-    @cooldown(1, 10, BucketType.user)
+    @command(name="translate", aliases=["tr"], description="command_translate_description",
+             usage=f"[{{{get_text('source_language')}}} "
+                   f"[{{{get_text('destination_language')}}}]] "
+                   f"<{get_text('text_to_translate')}>")
+    @cooldown(1, 2, BucketType.user)
     async def translate(self, ctx, lang: str, seclang: typing.Optional[str] = "", *,
                         content: typing.Optional[str] = ""):
         translator = googletrans.Translator()
@@ -53,6 +66,8 @@ class GoogleTranslator(Cog, name='Google Translator', description=get_text("cog_
                 content = seclang + " " + content
         else:
             content = lang + " " + seclang + " " + content
+        if len(content) > 1000:
+            await ctx.send(get_text('message_too_long'))
 
         if srclang is None:
             try:
@@ -61,7 +76,6 @@ class GoogleTranslator(Cog, name='Google Translator', description=get_text("cog_
                 await ctx.send(get_text("%s translate_error_invalid_code") % f"``{destlang}``")
                 return
         else:
-            print(destlang)
             try:
                 product = translator.translate(content, src=srclang, dest=destlang)
             except ValueError:

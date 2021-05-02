@@ -3,7 +3,7 @@ import typing
 
 import discord
 from discord import VoiceChannel, ClientException
-from discord.ext.commands import Cog, BucketType, command, cooldown, Context, guild_only
+from discord.ext.commands import Cog, BucketType, command, cooldown, Context, guild_only, Bot
 
 import bender.utils.bender_utils
 import bender.utils.message_handler
@@ -18,8 +18,23 @@ except ImportError:
     is_nacl = False
 
 
-@bender.utils.bender_utils.bender_module
-class VoiceClientCommands(Cog, name="Voice client", description=get_text("cog_voiceclientcommands_desc")):
+def setup(bot: Bot):
+    bot.add_cog(VoiceClientCommands(bot))
+
+
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+
+
+class VoiceClientCommands(Cog, name="Voice client", description="cog_voiceclientcommands_desc"):
     def __init__(self, bot):
         if not is_nacl:
             raise bender.utils.bender_utils.BenderModuleError(
@@ -28,8 +43,8 @@ class VoiceClientCommands(Cog, name="Voice client", description=get_text("cog_vo
         self.bot = bot
         print(f"Initialized {str(__name__)}")
 
-    @command(name="join", aliases=["j", "summon"], description=get_text("command_join_description"),
-             help=get_text("command_join_help"))
+    @command(name="join", aliases=["j", "summon"], description="command_join_description",
+             usage="")
     @guild_only()
     @cooldown(1, 10, BucketType.guild)
     async def join(self, ctx: Context, *, channel: typing.Optional[str] = None):
@@ -71,7 +86,7 @@ class VoiceClientCommands(Cog, name="Voice client", description=get_text("cog_vo
 
         try:
             await destination.connect(timeout=10)
-            await ctx.send(f"{get_text('join')} {destination.name}")
+            await ctx.send(get_text('%s join') % f"``{destination.name}``")
             print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
         except asyncio.TimeoutError:
             await ctx.send(get_text("timeout_error"))
@@ -81,8 +96,8 @@ class VoiceClientCommands(Cog, name="Voice client", description=get_text("cog_vo
             print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
             return
 
-    @command(name="disconnect", aliases=["dis", "leave", "l"], description=get_text("command_leave_description"),
-             help=get_text("command_leave_help"))
+    @command(name="disconnect", aliases=["dis", "leave", "l"], description="command_leave_description",
+             usage="")
     @guild_only()
     @cooldown(1, 10, BucketType.user)
     async def disconnect(self, ctx: Context):
