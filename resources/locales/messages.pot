@@ -1,0 +1,378 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Package Name\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-05-02 18:24+0200\n"
+"PO-Revision-Date: 2021-05-02 18:24+0100\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: \n"
+"X-Generator: Eazy Po 0.9.5.3\n"
+
+#, python-format
+msgid "%d queue_more"
+msgstr ""
+
+#, python-format
+msgid "%s %s kicked"
+msgstr ""
+
+#, python-format
+msgid "%s %s moved"
+msgstr ""
+
+#, python-format
+msgid "%s added_to_queue"
+msgstr ""
+
+#, python-format
+msgid "%s error_not_owner"
+msgstr ""
+
+#, python-format
+msgid "%s error_too_long"
+msgstr ""
+
+#, python-format
+msgid "%s info"
+msgstr ""
+
+#, python-format
+msgid "%s invalid_argument"
+msgstr ""
+
+#, python-format
+msgid "%s join"
+msgstr ""
+
+#, python-format
+msgid "%s no_page_error"
+msgstr ""
+
+#, python-format
+msgid "%s on_cooldown_error"
+msgstr ""
+
+#, python-format
+msgid "%s ping"
+msgstr ""
+
+#, python-format
+msgid "%s queue_full"
+msgstr ""
+
+#, python-format
+msgid "%s removed"
+msgstr ""
+
+#, python-format
+msgid "%s showing_help_for"
+msgstr ""
+
+#, python-format
+msgid "%s translate_error_invalid_code"
+msgstr ""
+
+msgid "aliases"
+msgstr ""
+
+msgid "already_connected_error"
+msgstr ""
+
+msgid "already_paused_error"
+msgstr ""
+
+msgid "bot_missing_permissions_error"
+msgstr ""
+
+msgid "bot_not_connected_error"
+msgstr ""
+
+msgid "channel"
+msgstr ""
+
+msgid "channel_empty"
+msgstr ""
+
+msgid "channel_not_match_error"
+msgstr ""
+
+msgid "command_help_tips"
+msgstr ""
+
+msgid "command_usage"
+msgstr ""
+
+msgid "commands_with_no_category"
+msgstr ""
+
+msgid "emptiness"
+msgstr ""
+
+msgid "empty_channel_error"
+msgstr ""
+
+msgid "ends_in"
+msgstr ""
+
+msgid "found"
+msgstr ""
+
+msgid "guild_only"
+msgstr ""
+
+msgid "help_categories"
+msgstr ""
+
+msgid "help_categories_description"
+msgstr ""
+
+msgid "join_error_same_channel"
+msgstr ""
+
+msgid "leave_error"
+msgstr ""
+
+msgid "loop_off"
+msgstr ""
+
+msgid "loop_on"
+msgstr ""
+
+msgid "message_too_long"
+msgstr ""
+
+msgid "missing_parameters_error"
+msgstr ""
+
+msgid "no_category"
+msgstr ""
+
+msgid "no_category_or_command"
+msgstr ""
+
+msgid "no_channel_error"
+msgstr ""
+
+msgid "no_result"
+msgstr ""
+
+msgid "not_found_error"
+msgstr ""
+
+msgid "not_paused_error"
+msgstr ""
+
+msgid "not_playing"
+msgstr ""
+
+msgid "now_playing"
+msgstr ""
+
+msgid "on_join"
+msgstr ""
+
+msgid "paused"
+msgstr ""
+
+msgid "play_error"
+msgstr ""
+
+msgid "playing_error_different_channel"
+msgstr ""
+
+msgid "position"
+msgstr ""
+
+msgid "position_error"
+msgstr ""
+
+msgid "possible_command_tips"
+msgstr ""
+
+msgid "possible_commands"
+msgstr ""
+
+msgid "queue"
+msgstr ""
+
+msgid "queue_full"
+msgstr ""
+
+msgid "queue_size_error"
+msgstr ""
+
+msgid "resumed"
+msgstr ""
+
+msgid "same_channels_error"
+msgstr ""
+
+msgid "searching"
+msgstr ""
+
+msgid "song_duration"
+msgstr ""
+
+msgid "subcommands"
+msgstr ""
+
+msgid "timeout_error"
+msgstr ""
+
+msgid "title"
+msgstr ""
+
+msgid "track_stacked"
+msgstr ""
+
+msgid "translate_error_invalid_code"
+msgstr ""
+
+msgid "unexpected_error"
+msgstr ""
+
+msgid "unknow_join_error"
+msgstr ""
+
+msgid "unknow_playing_error"
+msgstr ""
+
+msgid "unknown_remove_error"
+msgstr ""
+
+msgid "user_not_connected_error"
+msgstr ""
+
+msgid "command_info_description"
+msgstr ""
+
+msgid "command_ping_description"
+msgstr ""
+
+msgid "command_kick_description"
+msgstr ""
+
+msgid "command_kick_usage"
+msgstr ""
+
+
+msgid "command_kick_all_description"
+msgstr ""
+
+msgid "command_kick_all_usage"
+msgstr ""
+
+msgid "command_move_others_description"
+msgstr ""
+
+msgid "command_kick_others_usage"
+msgstr ""
+
+msgid "command_move_description"
+msgstr ""
+
+msgid "command_move_usage"
+msgstr ""
+
+msgid "command_move_all_description"
+msgstr ""
+
+msgid "command_move_all_usage"
+msgstr ""
+
+msgid "command_move_others_description"
+msgstr ""
+
+msgid "command_move_others_usage"
+msgstr ""
+
+
+msgid "command_join_description"
+msgstr ""
+
+msgid "command_join_usage"
+msgstr ""
+
+msgid "command_disconnect_description"
+msgstr ""
+
+msgid "command_translate_description"
+msgstr ""
+
+msgid "command_translate_usage"
+msgstr ""
+
+msgid "command_play_description"
+msgstr ""
+
+msgid "command_play_usage"
+msgstr ""
+
+msgid "command_skip_description"
+msgstr ""
+
+msgid "command_skip_usage"
+msgstr ""
+
+msgid "command_remove_description"
+msgstr ""
+
+msgid "command_remove_usage"
+msgstr ""
+
+msgid "command_nowplaying_description"
+msgstr ""
+
+msgid "command_queue_description"
+msgstr ""
+
+msgid "command_queue_usage"
+msgstr ""
+
+msgid "command_pause_description"
+msgstr ""
+
+msgid "command_resume_description"
+msgstr ""
+
+msgid "command_loop_description"
+msgstr ""
+
+msgid "cog_info_description"
+msgstr ""
+
+msgid "cog_moderation_description"
+msgstr ""
+
+msgid "cog_settings_description"
+msgstr ""
+
+msgid "cog_googletranslator_description"
+msgstr ""
+
+msgid "cog_voiceclientcommands_description"
+msgstr ""
+
+msgid "cog_youtubemusic_description"
+msgstr ""
+
+msgid "command_help_usage"
+msgstr ""
+
+msgid "command_help_description"
+msgstr ""
+
+
+
+
