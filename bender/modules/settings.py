@@ -28,4 +28,4 @@ class Settings(discord.ext.commands.Cog, description="cog_settings_description")
         self.bot: discord.ext.commands.Bot = bot
         self.bot.command_prefix = bender_utils.prefix
 
-        print(f"Initialized {str(__name__)}")
+        print(f"Initialized {str(self.__class__.__name__)}")

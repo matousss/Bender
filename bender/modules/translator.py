@@ -38,7 +38,8 @@ class GoogleTranslator(Cog, name='Google Translator', description="cog_googletra
             raise bender.utils.bender_utils.BenderModuleError(
                 f"{self.__class__.__name__} requires googletrans package to work with")
         self.bot = bot
-        print(f"Initialized {str(__name__)}")
+
+        print(f"Initialized {str(self.__class__.__name__)}")
 
     # todo revision
     @command(name="translate", aliases=["tr"], description="command_translate_description",

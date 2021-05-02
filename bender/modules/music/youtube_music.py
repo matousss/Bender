@@ -97,7 +97,7 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description="cog_youtubem
         self.config = copy.deepcopy(DEFAULT_CONFIG)
         self.player_config = copy.deepcopy(bender.modules.music.music.DEFAULT_PLAYER_CONFIG)
 
-        print(f"Initialized {str(__name__)}")
+        print(f"Initialized {str(self.__class__.__name__)}")
 
     def set_config(self, **kwargs):
         for key in kwargs.keys():

@@ -15,8 +15,6 @@ __all__ = ['Bender']
 
 
 class Bender(Bot):
-    def __init__(self, command_prefix, name: str = 'Bender', **options):
-        super().__init__(command_prefix, **options)
 
     async def on_ready(self):
         print("\n\n" + f'{self.user} has connected to Discord!\n\n')
@@ -25,7 +23,7 @@ class Bender(Bot):
         for guild in self.guilds:
             print(str(guild) + " (" + str(guild.id) + ")")
 
-        print(f"\n\n{self.name} {bender.__version__} started!\n\n")
+        print(f"\n\n{self.user.name} is running!\n\n")
 
     @staticmethod
     async def on_guild_join(guild):

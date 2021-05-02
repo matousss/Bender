@@ -30,7 +30,7 @@ class Moderation(Cog, name="Moderation", description="cog_moderation_description
 
     def __init__(self, bot):
         self.bot = bot
-        print(f"Initialized {str(__name__)}")
+        print(f"Initialized {str(self.__class__.__name__)}")
 
     @staticmethod
     async def channel_check(ctx: Context, destination, *, can_be_empty: bool = False):

@@ -117,21 +117,36 @@ from bender.utils.config import Config
 # todo settings
 # todo texts
 # todo pydoc
-HELP = 'WIP'
+HELP = """
+Usage: main.py [-h | -t arg]
+
+--help | -h 
+    Shows this message and ignore other arguments
+--token | -t discord_token
+    Override loading token from file and start app with specified token 
+"""
 
 
-def load_token(path: os.path):
-    if os.path.exists(path):
-        with open(path, 'rt') as file:
+def load_token(_path: os.path):
+    if os.path.exists(_path):
+        with open(_path, 'rt') as file:
             lines = file.readlines()
-        return lines
+
+        if len(lines) > 1:
+            print(f"File {_path} have invalid content. It must have one line with token!", file=sys.stderr)
+            exit(0)
+        else:
+            return lines[0]
+
     else:
-        raise ValueError("Given path doesn't exist")
+        print("Root directory must contain file token.token with Discord token or "
+              "token must be specified as argument: --token <token>", file=sys.stderr)
+        exit(0)
 
 
-async def start(token: str, bot: discord.ext.commands.Bot, is_bot: bool = True):
+async def start(_token: str, _bot: discord.ext.commands.Bot, is_bot: bool = True):
     try:
-        await bot.login(token, bot=is_bot)
+        await _bot.login(_token, bot=is_bot)
     except discord.LoginFailure:
         print("Login token is invalid", file=sys.stderr)
         input("Press enter to continue...")
@@ -140,7 +155,7 @@ async def start(token: str, bot: discord.ext.commands.Bot, is_bot: bool = True):
         print("Cannot reach Discord, please check your internet connection", file=sys.stderr)
         input("Press enter to continue...")
         return
-    await bot.connect(reconnect=True)
+    await _bot.connect(reconnect=True)
 
 
 if __name__ == "__main__":
@@ -150,45 +165,34 @@ if __name__ == "__main__":
             print("Too much arguments! Try run with --help.")
             exit(0)
 
-        if sys.argv[1] == "--help":
+        if sys.argv[1] in ("--help", "-h"):
             print(HELP)
             exit(0)
-        elif sys.argv[1] == "--token":
+        elif sys.argv[1] in ("--token", "-t"):
             token = sys.argv[2]
 
+    path = pathlib.Path(__file__).parent.joinpath("./token.token")
+    token = load_token(path)
+
     if not token:
-        path = pathlib.Path(__file__).parent.joinpath("./token.token")
-        try:
-            loaded = load_token(path)
-            if len(loaded) > 1:
-                print(f"File {path} have invalid content. It must have one line with token!", file=sys.stderr)
-                exit(0)
-            else:
-                token = loaded[0]
+        config = Config()
+        config = bender_utils.set_global_variable(config, 'config')
 
-        except ValueError:
-            print("Root directory must contain file token.token with Discord token or "
-                  "token must be specified as argument: --token <token>", file=sys.stderr)
-            exit(0)
-    config = Config()
-    config = bender_utils.set_global_variable(config, 'config')
-
-    # todo token encryption
     intents = discord.Intents.default()
     intents.members = True
-    print("\n\n\n\n\n\n"
-          " ██████╗░███████╗███╗░░██╗██████╗░███████╗██████╗░\n"
-          " ██╔══██╗██╔════╝████╗░██║██╔══██╗██╔════╝██╔══██╗\n"
-          " ██████╦╝█████╗░░██╔██╗██║██║░░██║█████╗░░██████╔╝\n"
-          " ██╔══██╗██╔══╝░░██║╚████║██║░░██║██╔══╝░░██╔══██╗\n"
-          " ██████╦╝███████╗██║░╚███║██████╔╝███████╗██║░░██║\n"
-          " ╚═════╝░╚══════╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝ v%s" % bender.__version__)
-    print("Loading...")
+    print("""\n\n
+       ██████╗░███████╗███╗░░██╗██████╗░███████╗██████╗░
+       ██╔══██╗██╔════╝████╗░██║██╔══██╗██╔════╝██╔══██╗
+       ██████╦╝█████╗░░██╔██╗██║██║░░██║█████╗░░██████╔╝
+       ██╔══██╗██╔══╝░░██║╚████║██║░░██║██╔══╝░░██╔══██╗
+       ██████╦╝███████╗██║░╚███║██████╔╝███████╗██║░░██║
+       ╚═════╝░╚══════╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝ v%s\n\n""" % bender.__version__)
+    print("\nLoading...\n")
     bot = Bender(command_prefix=bender_utils.prefix, intents=intents,
                  activity=discord.Activity(type=discord.ActivityType.listening,
                                            name=f"{bender_utils.default_prefix()}help"))
     bot.setup()
-    print("Starting...")
+    print("\nStarting...\n")
 
     loop = asyncio.get_event_loop()
     task = start(token, bot)

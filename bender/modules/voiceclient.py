@@ -41,7 +41,8 @@ class VoiceClientCommands(Cog, name="Voice client", description="cog_voiceclient
                 f"{self.__class__.__name__} requires PyNaCl library to work with "
                 f"discord.VoiceClient")
         self.bot = bot
-        print(f"Initialized {str(__name__)}")
+
+        print(f"Initialized {str(self.__class__.__name__)}")
 
     @command(name="join", aliases=["j", "summon"], description="command_join_description",
              usage="")

@@ -33,7 +33,7 @@ class Info(Cog, name="Information", description="cog_info_description"):
     def __init__(self, bot: Bot):
         self.BOT: Bot = bot
         bot.remove_command('help')
-        print(f"Initialized {str(__name__)}")
+        print(f"Initialized {str(self.__class__.__name__)}")
 
     @command(name="info", description="command_info_description", usage="")
     @cooldown(1, 10)
