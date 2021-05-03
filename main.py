@@ -210,7 +210,9 @@ if __name__ == "__main__":
        ╚═════╝░╚══════╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝ v%s\n\n""" % bender.__version__)
     print("\nLoading...\n")
     #load_config()
-    bot = Bender(message_handler=MessageHandler(os.path.join(_temp.get_root_path(), "resources\\locales")),
+    message_handler = MessageHandler()
+    message_handler.setup(os.path.join(_temp.get_root_path(), "resources\\locales"))
+    bot = Bender(message_handler=message_handler,
                  command_prefix=",", intents=intents,
                  activity=discord.Activity(type=discord.ActivityType.listening,
                                            name=f"{_temp.get_default_prefix()}help"), strip_after_prefix=True)

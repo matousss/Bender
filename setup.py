@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='bender',
-    version='0.19.1b0',
+    version='0.20.5b0',
     packages=['bender', 'bender.utils', 'bender.modules'],
     url='',
     license='',

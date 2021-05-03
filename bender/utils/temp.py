@@ -30,3 +30,7 @@ def get_config() -> Config:
 
 def get_default_prefix():
     return ','
+
+
+def get_default_language():
+    return 'en'

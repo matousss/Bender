@@ -1,12 +1,7 @@
 import discord
 import discord.ext.commands
 
-import bender.utils.message_handler
-
-# from discord.ext.commands import CommandNotFound, Cog, Context, CogMeta, CommandError
-
-
-__all__ = ['__cogs__', 'Checks', 'on_command_error',
+__all__ = ['Checks', 'on_command_error',
            'BotMissingPermissions', 'ExtensionLoadError', 'ExtensionInitializeError']
 
 
@@ -27,38 +22,30 @@ async def on_command_error(ctx, error):
     """Default command error handler"""
     try:
         if isinstance(error, discord.ext.commands.CommandNotFound):
-            # await ctx.send(bender.utils.message_handler.get_text("command_not_found_error"))
             pass
         elif isinstance(error, discord.ext.commands.errors.NotOwner):
-            await ctx.send(bender.utils.message_handler.get_text("%s error_not_owner") % ctx.author.mention)
+            await ctx.send(ctx.bot.get_text("%s error_not_owner",
+                                            await ctx.bot.get_language(ctx)) % ctx.author.mention)
         elif isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
-            # await ctx.send("Ty chceš moc věcí najednou! Počkej `" + str(int(error.cooldown.per)) + "s` saláme!")
-            await ctx.send(bender.utils.message_handler.get_text("%s on_cooldown_error") %
-                           f" ``{str(int(error.cooldown.per))}s``")
+            await ctx.send(ctx.bot.get_text("%s on_cooldown_error",
+                                            await ctx.bot.get_language(ctx)) %
+                           f" ``{str(round(error.cooldown.per, 1))}s``")
         elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
-            await ctx.send(bender.utils.message_handler.get_text("missing_parameters_error"))
+            await ctx.send(ctx.bot.get_text("missing_parameters_error",
+                                            await ctx.bot.get_language(ctx)))
             return True
         elif isinstance(error, discord.ext.commands.NoPrivateMessage):
-            await ctx.send(bender.utils.message_handler.get_text("guild_only"))
+            await ctx.send(ctx.bot.get_text("guild_only", await ctx.bot.get_language(ctx)))
         elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions) or \
                 isinstance(error, BotMissingPermissions) or isinstance(error, discord.Forbidden):
-            await ctx.send(bender.utils.message_handler.get_text("bot_missing_permissions_error"))
+            await ctx.send(ctx.bot.get_text("bot_missing_permissions_error",
+                                            await ctx.bot.get_language(ctx)))
 
         else:
             return True
         return False
     except discord.Forbidden:
         return False
-
-
-#
-# def get_channel(ctx: Context, channel: str):
-#     if channel.startswith("<#"):
-#         return discord.utils.get(ctx.guild.channels, id=int(channel[2:].replace(">", "")))
-#     elif channel.isnumeric():
-#         return discord.utils.get(ctx.guild.channels, id=int(channel))
-#     else:
-#         return discord.utils.get(ctx.guild.channels, name=channel)
 
 
 class ExtensionInitializeError(Exception):
@@ -77,30 +64,3 @@ class ExtensionLoadError(Exception):
 
     def __init__(self, message: str):
         super().__init__(message)
-
-
-# from modules import __cogs__
-__cogs__ = []
-
-# def bender_module(cog: discord.ext.commands.Cog):
-#     if not isinstance(cog, (discord.ext.commands.CogMeta, discord.ext.commands.Cog)):
-#         raise BenderModuleError(f"bender_module must be {discord.ext.commands.Cog.__name__} "
-#                                 f"or {discord.ext.commands.CogMeta.__name__} and not "
-#                                 f"{cog.__class__.__name__}")
-#
-#     for c in __cogs__:
-#         if c.__name__ == cog.__name__:
-#             break
-#     else:
-#         __cogs__.append(cog)
-#         print(f"Registered cog {cog.__name__}")
-#     return cog
-
-
-
-
-
-
-
-# noinspection PyUnusedLocal
-

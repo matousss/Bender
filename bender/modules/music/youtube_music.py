@@ -14,7 +14,7 @@ from warnings import warn
 
 from discord import Embed, ClientException, Member, Forbidden, VoiceState
 from discord.ext import commands, tasks
-from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure
+from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure, Context
 
 import bender.utils.bender_utils
 import bender.utils.temp as _temp
@@ -38,7 +38,6 @@ def setup(bot: Bot):
     cog = YoutubeMusic(bot)
 
     if config and 'YT_MUSIC' in config:
-
         cog.set_config(**config['YT_MUSIC'])
 
     if not check_ffmpeg():
@@ -144,19 +143,19 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
             error = error.__cause__
 
         if isinstance(error, DownloadError) or isinstance(error, PlayError):
-            await ctx.send(self.get_text("track_stacked"))
+            await ctx.send(self.get_text("track_stacked", await self.get_language(ctx)))
         elif isinstance(error, YTNoResult):
-            await ctx.send(self.get_text("no_result"))
+            await ctx.send(self.get_text("not_found_error", await self.get_language(ctx)))
 
         elif isinstance(error, NotInSameChannel):
-            await ctx.send(self.get_text("channel_not_match_error"))
+            await ctx.send(self.get_text("channel_not_match_error", await self.get_language(ctx)))
         elif isinstance(error, BotNotConnected):
-            await ctx.send(self.get_text("bot_not_connected_error"))
+            await ctx.send(self.get_text("bot_not_connected_error", await self.get_language(ctx)))
         elif isinstance(error, UserNotConnected):
-            await ctx.send(self.get_text("user_not_connected_error"))
+            await ctx.send(self.get_text("user_not_connected_error", await self.get_language(ctx)))
         elif await bender.utils.bender_utils.on_command_error(ctx, error):
             try:
-                await ctx.send(self.get_text("unexpected_error"))
+                await ctx.send(self.get_text("unexpected_error", await self.get_language(ctx)))
             except Forbidden:
                 pass
             print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
@@ -247,19 +246,21 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
         return True
 
     @staticmethod
-    def prepare_embed(bot: Bot, song: Song, embed: Embed = Embed()) -> Embed:
+    async def prepare_embed(ctx: Context, song: Song, embed: Embed = Embed()) -> Embed:
+        bot = ctx.bot
         if song.thumbnail and len(song.thumbnail) > 0:
             embed.set_thumbnail(url=song.thumbnail[1]) if len(song.thumbnail) >= 1 else song.thumbnail[0]
         # embed.add_field(name=song.details['title'] if song.details['title'] else 'NaN',
         #                 value=f"https://www.youtube.com/watch?v={song.details['id']}\n["
         #                       + str((datetime.timedelta(seconds=song.details['duration'])) if
         #                             song.details['duration'] > 0 else '<NaN>') + "]", inline=False)
-        embed.add_field(name=bot.get_text("title"),
+        lang = await bot.get_language(ctx)
+        embed.add_field(name=bot.get_text("title", lang),
                         value=f"[{song.details['title'] if song.details['title'] else 'NaN'}]"
                               f"(https://www.youtube.com/watch?v={song.details['id']})", inline=False)
-        embed.add_field(name=bot.get_text("channel"),
+        embed.add_field(name=bot.get_text("channel", lang),
                         value=song.details['uploader'] if song.details['uploader'] else 'NaN')
-        embed.add_field(name=bot.get_text("song_duration"),
+        embed.add_field(name=bot.get_text("song_duration", lang),
                         value=str((datetime.timedelta(seconds=song.details['duration'])) if
                                   song.details['duration'] > 0 else '<NaN>'))
         return embed
@@ -283,12 +284,13 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
     @commands.cooldown(rate=1, per=3, type=commands.BucketType.guild)
     async def play(self, ctx: commands.Context, *, what: str):
         # check if in voice channel, connect to some if not
+        lang = await self.get_language(ctx)
         if not ctx.voice_client or not ctx.voice_client.is_connected():
             if ctx.author.voice and ctx.author.voice.channel:
                 try:
                     await asyncio.wait_for(ctx.invoke(self.join, channel=ctx.author.voice.channel), timeout=10)
                 except asyncio.TimeoutError:
-                    await ctx.send(self.get_text("unknow_join_error"))
+                    await ctx.send(self.get_text("unknown_join_error", lang))
                     return
             else:
                 raise UserNotConnected()
@@ -304,14 +306,14 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
             if ctx.voice_client and ctx.voice_client.is_connected():
                 if ctx.author.voice and ctx.author.voice.channel \
                         and ctx.voice_client.channel.id != ctx.author.voice.channel.id:
-                    await ctx.send(self.get_text("playing_error_different_channel"))
+                    await ctx.send(self.get_text("playing_error_different_channel", lang))
                     return
             else:
-                await ctx.send(self.get_text("user_not_connected_error"))
+                await ctx.send(self.get_text("user_not_connected_error", lang))
                 return
             # find song
 
-            message = await ctx.send(self.get_text("searching"))
+            message = await ctx.send(self.get_text("searching", lang))
 
             loop = asyncio.get_running_loop()
 
@@ -323,10 +325,10 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
             except Exception:
                 raise
             if not song:
-                await ctx.send(self.get_text("not_found_error"))
+                await ctx.send(self.get_text("not_found_error", lang))
 
             if message and message.channel:
-                await message.edit(content=self.get_text("found"))
+                await message.edit(content=self.get_text("found", lang))
             else:
                 await ctx.send()
 
@@ -339,13 +341,14 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
 
             if isinstance(song, Song):
                 if check_too_long(song):
-                    await ctx.send(self.get_text('%s error_too_long') % f"``{YoutubeMusic.format_song_details(song)}``")
+                    await ctx.send(
+                        self.get_text('%s error_too_long', lang) % f"``{YoutubeMusic.format_song_details(song)}``")
                     return
             elif isinstance(song, list):
                 for s in song:
                     if check_too_long(s):
                         await ctx.send(
-                            self.get_text('%s error_too_long') % f"``{YoutubeMusic.format_song_details(s)}``")
+                            self.get_text('%s error_too_long', lang) % f"``{YoutubeMusic.format_song_details(s)}``")
                         song.remove(s)
 
             else:
@@ -359,7 +362,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                         await asyncio.wait_for(ctx.invoke(self.join, channel=ctx.author.voice.channel), timeout=10)
                     except asyncio.TimeoutError:
                         player.idle = True
-                        await ctx.send(self.get_text('play_error'))
+                        await ctx.send(self.get_text('play_error', lang))
                         return
 
                 if not ctx.voice_client.is_playing():
@@ -374,15 +377,15 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                 try:
                     player.add_song(first)
                 except QueueFull:
-                    await ctx.send(self.get_text('%s queue_full') % f"``(0 / {(len(song) + 1)}``")
+                    await ctx.send(self.get_text('%s queue_full', lang) % f"``(0 / {(len(song) + 1)}``")
                     return
                 await start_playing()
 
                 not_added = await player.add_songs(song)
                 if len(not_added) > 0:
-                    await ctx.send(self.get_text('%s queue_full') % f"``{len(song)}/{len(not_added)}``")
+                    await ctx.send(self.get_text('%s queue_full', lang) % f"``{len(song)}/{len(not_added)}``")
                     return
-                await ctx.send(self.get_text('%s added_to_queue') % f"``{count}``")
+                await ctx.send(self.get_text('%s added_to_queue', lang) % f"``{count}``")
 
             else:
                 will_play = False
@@ -391,13 +394,13 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                 try:
                     player.add_song(song)
                 except QueueFull:
-                    await ctx.send(self.get_text("queue_full"))
+                    await ctx.send(self.get_text("queue_full", lang))
                     return
                 await start_playing()
 
-                embed = YoutubeMusic.prepare_embed(ctx.bot, song, embed)
-                embed.add_field(name=self.get_text("position"),
-                                value=self.get_text("now_playing") if will_play else str(len(player)) + '.')
+                embed = await YoutubeMusic.prepare_embed(ctx, song, embed)
+                embed.add_field(name=self.get_text("position", lang),
+                                value=self.get_text("now_playing", lang) if will_play else str(len(player)) + '.')
 
                 await ctx.send(embed=embed)
 
@@ -433,7 +436,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                     except ClientException:
                         pass
                 else:
-                    await ctx.send(self.get_text("queue_size_error"))
+                    await ctx.send(self.get_text("queue_size_error", await self.get_language(ctx)))
 
                     while not player.queue_empty():
                         try:
@@ -444,7 +447,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                         ctx.voice_client.stop()
                     except ClientException:
                         pass
-                await ctx.send(f"{self.get_text('skip')} : {qsize - player.qsize()}")
+                await ctx.send(f"{self.get_text('skip', await self.get_language(ctx))} : {qsize - player.qsize()}")
         else:
             await ctx.send("not_playing_error")
             return
@@ -454,13 +457,14 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def remove(self, ctx: commands.Context, position: int, *,
                      error: typing.Optional[str] = None):
+        lang = await self.get_language(ctx)
         if error:
-            await ctx.send(self.get_text("%s no_page_error") % f"``{position} {error}``")
+            await ctx.send(self.get_text("%s no_page_error", lang) % f"``{position} {error}``")
             return
         if self.is_playing(ctx) or self.is_paused(ctx):
             player = self.players[ctx.guild.id]
             if position < 1 or position > len(player):
-                await ctx.send(self.get_text("position_error"))
+                await ctx.send(self.get_text("position_error", lang))
                 return
             else:
                 async with player.lock:
@@ -468,18 +472,19 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                     try:
                         player.remove_by_index(position)
                     except Exception:
-                        await ctx.send(self.get_text("unknown_remove_error"))
+                        await ctx.send(self.get_text("unknown_remove_error", lang))
                         raise
-                    await ctx.send(self.get_text("%s removed") % f"``{song_title}``")
+                    await ctx.send(self.get_text("%s removed", lang) % f"``{song_title}``")
 
     @commands.command(name='nowplaying', aliases=['np'], description="command_nowplaying_description",
                       usage="")
     @commands.cooldown(1, 2, commands.BucketType.guild)
     async def nowplaying(self, ctx):
+        lang = await self.get_language(ctx)
         if self.is_playing(ctx) or self.is_paused(ctx):
             player = self.players[ctx.guild.id]
         else:
-            await ctx.send("not_playing_error")
+            await ctx.send("not_playing_error", lang)
             return
         if player.now_playing:
             song = player.now_playing
@@ -490,45 +495,47 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
             #                 value=f"https://www.youtube.com/watch?v={song.details['id']}\n["
             #                       + str((datetime.timedelta(seconds=song.details['duration'])) if
             #                             song.details['duration'] > 0 else '<NaN>') + "]", inline=False)
-            embed.title = self.get_text("now_playing")
-            embed = YoutubeMusic.prepare_embed(ctx, song, embed)
-            embed.add_field(name=self.get_text("ends_in"),
+            embed.title = self.get_text("now_playing", lang)
+            embed = await YoutubeMusic.prepare_embed(ctx, song, embed)
+            embed.add_field(name=self.get_text("ends_in", lang),
                             value=(str(datetime.timedelta(
                                 seconds=song.details['duration'] - (int(time.time()) - player.started))
                             ) if song.details['duration']
                                    else 'NaN')
                             if not player.voice_client.is_paused()
-                            else self.get_text("paused"))
+                            else self.get_text("paused", lang))
 
             await ctx.send(embed=embed)
             return
         else:
-            await ctx.send(self.get_text("unknow_playing_error"))
+            await ctx.send(self.get_text("unknown_playing_error", lang))
 
     @commands.command(name='queue', aliases=['q'], description="command_queue_description",
                       usage="command_queue_usage")
     @commands.cooldown(1, 2, commands.BucketType.guild)
     async def queue(self, ctx, page: typing.Optional[int] = None, *, not_page: typing.Optional[str] = None):
+        lang = await self.get_language(ctx)
         if not_page:
-            await ctx.send(self.get_text("%s no_page_error") % f"``{page if page else '' + not_page}``")
+            await ctx.send(self.get_text("%s no_page_error",
+                                         await self.get_language(ctx)) % f"``{page if page else '' + not_page}``")
             return
         if not page:
             page = 1
         if self.is_playing(ctx):
             player = self.players[ctx.guild.id]
         else:
-            await ctx.send("not_playing_error")
+            await ctx.send(self.get_text("not_playing_error", lang))
             return
 
         queue = player.current_queue()
         pages = int(math.ceil(len(queue) / float(PAGE_SIZE)))
         pages = 1 if pages == 0 else pages
         if page != 1 and (page > pages or page < 1):
-            await ctx.send(self.get_text("%s no_page_error") % f"``{page}``")
+            await ctx.send(self.get_text("%s no_page_error", lang) % f"``{page}``")
             return
 
         embed = Embed(color=0xff0000)
-        embed.title = self.get_text('queue')
+        embed.title = self.get_text('queue', lang)
         index = page * PAGE_SIZE - PAGE_SIZE
 
         if page == pages:
@@ -545,7 +552,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
             if now_playing.thumbnail and len(now_playing.thumbnail) > 0:
                 embed.set_thumbnail(url=now_playing.thumbnail[1]) if len(now_playing.thumbnail) >= 1 else \
                     now_playing.thumbnail[0]
-            embed.add_field(name=self.get_text("now_playing"),
+            embed.add_field(name=self.get_text("now_playing", lang),
                             value=f"[{converted[0]}](https://www.youtube.com/watch?v"
                                   f"{now_playing.details['id']}) {converted[1]}", inline=False)
         sb = ""
@@ -559,33 +566,31 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                     f"{index}. [{converted[0]}](https://www.youtube.com/watch?v{e.details['id']}) {converted[1]}\n")
 
         else:
-            sb = self.get_text('emptiness')
+            sb = self.get_text('emptiness', lang)
         if len(queue) > index:
-            sb += self.get_text('%d queue_more') % f"``{(len(queue) - index)}``"
-        embed.add_field(name=f"{self.get_text('%d in_queue')}" % len(queue),
+            sb += self.get_text('%d queue_more', lang) % f"``{(len(queue) - index)}``"
+        embed.add_field(name=f"{self.get_text('%d in_queue', lang)}" % len(queue),
                         value=sb,
                         inline=False)
 
-        # if pages > page:
-        #     embed.add_field(name='\u200b', value=f"{self.get_text('queue_more')} `{len(queue) - index}`")
-        # embed.add_field(name='\u200b', value=f"{self.get_text('page')} `{page}/{pages}`")
-        embed.set_footer(text=f"{self.get_text('page')} {page}/{pages}")
+        embed.set_footer(text=f"{self.get_text('page', lang)} {page}/{pages}")
         await ctx.send(embed=embed)
 
     @commands.command(name='pause', description="command_pause_description",
                       usage="")
     @commands.cooldown(1, 2, commands.BucketType.guild)
     async def pause(self, ctx: commands.Context):
+        lang = await self.get_language(ctx)
         if self.is_playing(ctx):
             player = self.players[ctx.guild.id]
             try:
                 player.pause()
-                await ctx.send(self.get_text("paused"))
+                await ctx.send(self.get_text("paused", lang))
             except AlreadyPaused:
-                await ctx.send(self.get_text("already_paused_error"))
+                await ctx.send(self.get_text("already_paused_error", lang))
                 return
         else:
-            await ctx.send("not_playing_error")
+            await ctx.send(self.get_text("not_playing_error", lang))
             return
         pass
 
@@ -593,16 +598,17 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                       usage="")
     @commands.cooldown(1, 2, commands.BucketType.guild)
     async def resume(self, ctx: commands.Context):
+        lang = await self.get_language(ctx)
         if self.is_paused(ctx):
             player = self.players[ctx.guild.id]
             try:
                 player.resume()
-                await ctx.send(self.get_text("resumed"))
+                await ctx.send(self.get_text("resumed", lang))
             except NotPaused:
-                await ctx.send(self.get_text("not_paused_error"))
+                await ctx.send(self.get_text("not_paused_error", lang))
                 return
         else:
-            await ctx.send("not_playing_error")
+            await ctx.send(self.get_text("not_playing_error", lang))
             return
         pass
 
@@ -610,12 +616,13 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                       usage="")
     @commands.cooldown(1, 2, commands.BucketType.guild)
     async def loop(self, ctx: commands.Context):
+        lang = await self.get_language(ctx)
         if self.is_player(ctx) and ctx.voice_client.is_connected():
             player = self.players[ctx.guild.id]
             player.looped = False if player.looped else True
             if player.looped:
-                await ctx.send(self.get_text("loop_on"))
+                await ctx.send(self.get_text("loop_on", lang))
             else:
-                await ctx.send(self.get_text("loop_off"))
+                await ctx.send(self.get_text("loop_off", lang))
         else:
-            await ctx.send(self.get_text("not_playing"))
+            await ctx.send(self.get_text("not_playing", lang))

@@ -4,8 +4,8 @@ import pathlib
 import sqlite3
 import typing
 
-from discord import Message, Embed
-from discord.ext.commands import Cog, group, Context
+from discord import Message, Embed, Guild
+from discord.ext.commands import group, Context
 
 import bender.utils.temp as _temp
 from bender.bot import BenderCog, Bender as Bot
@@ -16,6 +16,8 @@ def setup(bot: Bot):
     bot.add_cog(cog)
 
     bot.command_prefix = cog.get_prefix
+    bot.database = cog.database
+    bot.get_language = bot.database.executor_get_language
     print(f"Initialized {cog.__class__.__name__}")
 
 
@@ -38,13 +40,23 @@ class Settings(BenderCog, description="cog_settings_description"):
         self.get_prefix = self._database.executor_get_prefix
         super().__init__(bot)
 
-    @Cog.listener()
+    @BenderCog.listener()
     async def on_ready(self):
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, self._database.prepare_db, self.bot)
         await asyncio.wait_for(task, timeout=None)
 
-    pass
+    @BenderCog.listener()
+    async def on_guild_join(self, guild: Guild):
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, self._database.add_guild, guild.id)
+        await asyncio.wait_for(task, timeout=None)
+
+    @BenderCog.listener()
+    async def on_guild_remove(self, guild: Guild):
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, self._database.remove_guild, guild.id)
+        await asyncio.wait_for(task, timeout=None)
 
     def cog_check(self, ctx):
         if ctx.guild:
@@ -67,19 +79,21 @@ class Settings(BenderCog, description="cog_settings_description"):
                      usage="command_setting_prefix_usage")
     async def prefix(self, ctx: Context, *, args: typing.Optional[str] = None):
         if not args:
-            await ctx.send(self.get_text("%s current_prefix") % ctx.bot.get_prefix(ctx.message))
+            await ctx.send(self.get_text("%s current_prefix",
+                                         await self.get_language(ctx)) % f"``{await ctx.bot.get_prefix(ctx.message)}``")
         else:
             args = args.lstrip()
             if len(args) > 5:
-                await ctx.send(self.get_text("prefix_too_long_error"))
+                await ctx.send(self.get_text("prefix_too_long_error", await self.get_language(ctx)))
             else:
                 loop = asyncio.get_running_loop()
                 task = loop.run_in_executor(None, self._database.set_prefix, ctx.guild.id, args)
                 try:
                     await asyncio.wait_for(task, timeout=10)
                 except asyncio.TimeoutError:
-                    await ctx.send(self.get_text("unknown_error_setting_prefix"))
-                await ctx.send(self.get_text("%s current_prefix") % f"{args}")
+                    await ctx.send(self.get_text("unknown_setting_prefix_error", await self.get_language(ctx)))
+                    return
+                await ctx.send(self.get_text("%s current_prefix", await self.get_language(ctx)) % f"``{args}``")
 
     @setting.command(name="language", aliases=["lang"], description="command_setting_language_description",
                      usage="command_setting_language_usage")
@@ -90,15 +104,16 @@ class Settings(BenderCog, description="cog_settings_description"):
                 loop = asyncio.get_running_loop()
                 task = loop.run_in_executor(None, self._database.get_language, ctx.guild.id)
                 current_language = await asyncio.wait_for(task, timeout=10)
-                await ctx.send(self.get_text("%s current_language") % f"``{current_language}``")
+                await ctx.send(self.get_text("%s current_language", await self.get_language(ctx)) % f"``{current_language}``")
             elif args == 'languages':
+                lang = await self.get_language(ctx)
                 sb = ""
                 if ctx.bot.loaded_languages:
                     for lang in ctx.bot.loaded_languages:
                         sb += f"``{lang}``, "
-                        await ctx.send(self.get_text("%s possible_languages") % sb[:-2])
+                        await ctx.send(self.get_text("%s possible_languages", lang) % sb[:-2])
                 else:
-                    await ctx.send("error_no_languages")
+                    await ctx.send("error_no_languages", lang)
             elif ctx.bot.loaded_languages and args in ctx.bot.loaded_languages:
                 args = args.lstrip()
                 loop = asyncio.get_running_loop()
@@ -106,12 +121,16 @@ class Settings(BenderCog, description="cog_settings_description"):
 
                 await asyncio.wait_for(task, timeout=10)
 
-                await ctx.send(self.get_text("%s current_language") % f"``{args}``")
+                await ctx.send(self.get_text("%s current_language", await self.get_language(ctx)) % f"``{args}``")
             else:
-                await ctx.send(self.get_text("setting_not_supported_language_error"))
+                await ctx.send(self.get_text("setting_not_supported_language_error", await self.get_language(ctx)))
 
         except asyncio.TimeoutError:
-            await ctx.send(self.get_text("unknown_error_setting"))
+            await ctx.send(self.get_text("unknown_setting_language_error", await self.get_language(ctx)))
+
+    @property
+    def database(self):
+        return self._database
 
 
 class Database(object):
@@ -146,6 +165,14 @@ class Database(object):
             SELECT (?1)
             WHERE NOT EXISTS (SELECT id FROM guilds WHERE id == ?1)""", (guild_id,))
 
+    def remove_guild(self, guild_id: int):
+        with self.connect() as connection:
+            connection.execute("""
+            DELETE FROM guilds 
+            WHERE EXISTS (SELECT id FROM guilds WHERE id == ?1)
+            AND id == ?1             
+            """, (guild_id,))
+
     def get_prefix(self, guild_id: int):
 
         connection = self.connect()
@@ -161,7 +188,7 @@ class Database(object):
         finally:
             connection.close()
         # todo default prefix load from config
-        return ","
+        return _temp.get_default_prefix()
 
     def set_prefix(self, guild_id: int, prefix: str):
         with self.connect() as connection:
@@ -228,7 +255,7 @@ class Database(object):
 
     async def executor_get_prefix(self, bot=None, message: Message = None):
         if not message.guild:
-            return ","
+            return _temp.get_default_prefix()
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, self.get_prefix, message.guild.id)
         try:
@@ -236,7 +263,21 @@ class Database(object):
             return prefix
         except TimeoutError:
             pass
-        return ","
+        return _temp.get_default_prefix()
+
+    async def executor_get_language(self, ctx: Context):
+
+        if not ctx.guild:
+            return _temp.get_default_language()
+        print(ctx.guild)
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, self.get_language, ctx.guild.id)
+        try:
+            prefix = await asyncio.wait_for(task, timeout=2)
+            return prefix
+        except TimeoutError:
+            pass
+        return _temp.get_default_language()
 
     def prepare_db(self, bot: Bot) -> None:
         guild_ids = []

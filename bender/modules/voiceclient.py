@@ -3,11 +3,11 @@ import typing
 
 import discord
 from discord import VoiceChannel, ClientException
-from discord.ext.commands import Cog, BucketType, command, cooldown, Context, guild_only
+from discord.ext.commands import BucketType, command, cooldown, Context, guild_only
 
 import bender.utils.bender_utils
 import bender.utils.message_handler
-from bender.bot import Bender as Bot, BenderCog
+from bender.bot import BenderCog, Bender as Bot
 
 try:
     import nacl.secret
@@ -16,11 +16,8 @@ try:
 except ImportError:
     is_nacl = False
 
-global setup
-
 
 def setup(bot: Bot):
-
     bot.add_cog(VoiceClientCommands(bot))
 
 
@@ -52,20 +49,22 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
     async def join(self, ctx: Context, *, channel: typing.Optional[str] = None):
         if ctx.voice_client and ctx.voice_client.is_connected():
             # raise ClientException("Already connected to voice channel")
-            await ctx.send(self.get_text("already_connected_error"))
+            await ctx.send(self.get_text("already_connected_error", await self.get_language(ctx)))
+            return
         if channel is not None:
             if isinstance(channel, VoiceChannel):
                 destination = channel
             else:
                 destination = discord.utils.get(ctx.guild.channels, name=channel)
                 if not destination:
-                    await ctx.send(f'{self.get_text("no_channel")}: {channel}')
+                    await ctx.send(f'{self.get_text("no_channel", await self.get_language(ctx))}: {channel}')
                     return
 
         elif ctx.author.voice and ctx.author.voice.channel:
             destination = ctx.author.voice.channel
+
         else:
-            await ctx.send(self.get_text("no_channel_error"))
+            await ctx.send(self.get_text("no_channel_error", await self.get_language(ctx)))
             return
 
         if ctx.voice_client and ctx.voice_client.is_connected() and channel is None:
@@ -73,12 +72,13 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
                 await ctx.send(self.get_text("join_error_same_channel"))
                 return
             else:
+                lang = await self.get_language(ctx)
                 try:
                     await ctx.voice_client.move_to(destination)
-                    await ctx.send(f"{self.get_text('join')} {destination.name}")
+                    await ctx.send(f"{self.get_text('join', lang)} {destination.name}")
 
                 except Exception:
-                    await ctx.send(self.get_text("unknow_join_error"))
+                    await ctx.send(self.get_text("unknown_join_error", lang))
                 return
 
         if destination.permissions_for(ctx.me).connect is False:
@@ -88,10 +88,10 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
 
         try:
             await destination.connect(timeout=10)
-            await ctx.send(self.get_text('%s join') % f"``{destination.name}``")
+            await ctx.send(self.get_text('%s join', await self.get_language(ctx)) % f"``{destination.name}``")
             print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
         except asyncio.TimeoutError:
-            await ctx.send(self.get_text("timeout_error"))
+            await ctx.send(self.get_text("timeout_error", await self.get_language(ctx)))
             return
         except ClientException:
             await ctx.send("already_connected_error")
@@ -108,6 +108,6 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
                 try:
                     await ctx.voice_client.move_to(None)
                 except Exception:
-                    await ctx.send(self.get_text("leave_error"))
+                    await ctx.send(self.get_text("leave_error", await self.get_language(ctx)))
                 return
-        await ctx.send(self.get_text("no_channel_error"))
+        await ctx.send(self.get_text("no_channel_error", await self.get_language(ctx)))
