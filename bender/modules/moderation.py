@@ -4,8 +4,6 @@ import discord.utils as discord_utils
 from discord import VoiceChannel, Member, HTTPException, Message
 from discord.ext.commands import Cog, Context, group, guild_only, Bot
 
-from bender.utils.bender_utils import prefix as _prefix
-from bender.utils.message_handler import get_text
 
 __all__ = ['Moderation']
 
@@ -35,13 +33,13 @@ class Moderation(Cog, name="Moderation", description="cog_moderation_description
     @staticmethod
     async def channel_check(ctx: Context, destination, *, can_be_empty: bool = False):
         if not destination:
-            await ctx.send(get_text("no_channel_error"))
+            await ctx.send(ctx.bot.get_text("no_channel_error"))
             return False
         if not destination.permissions_for(ctx.me).move_members:
-            await ctx.send(get_text("bot_missing_permissions_error"))
+            await ctx.send(ctx.bot.get_text("bot_missing_permissions_error"))
             return False
         if len(destination.members) == 0 and not can_be_empty:
-            await ctx.send(get_text("empty_channel_error"))
+            await ctx.send(ctx.bot.get_text("empty_channel_error"))
             return False
         return True
 
@@ -108,7 +106,7 @@ class Moderation(Cog, name="Moderation", description="cog_moderation_description
     async def kick(self, ctx: Context):
         if ctx.invoked_subcommand is None:
             if ctx.message:
-                args = ctx.message.content.replace(_prefix(message=ctx.message), '')
+                args = ctx.message.content.replace(ctx.bot.get_prefix(ctx.message), '')
                 if args[0] == 'k':
                     args = args[2:].lstrip()
                 elif args[:4] == 'kick':
@@ -133,7 +131,7 @@ class Moderation(Cog, name="Moderation", description="cog_moderation_description
         if not await Moderation.channel_check(ctx, destination):
             return
         if len(destination.members) == 0:
-            await ctx.send(get_text("channel_empty"))
+            await ctx.send(ctx.bot.get_text("channel_empty"))
             return
         if len(members) == 0 and inverted:
             members = [ctx.author]
@@ -141,7 +139,7 @@ class Moderation(Cog, name="Moderation", description="cog_moderation_description
             to_kick = len(destination.members)
             kicked = await Moderation.move_all_members_or_with_role(destination, None, members, roles,
                                                                     inverted=inverted)
-            await ctx.send(get_text("%s %s kicked") % (f"``{kicked}/{to_kick}``", f"``{destination.name}``"))
+            await ctx.send(ctx.bot.get_text("%s %s kicked") % (f"``{kicked}/{to_kick}``", f"``{destination.name}``"))
 
         else:
             await ctx.send("user_missing_permissions_error")
@@ -164,7 +162,7 @@ class Moderation(Cog, name="Moderation", description="cog_moderation_description
     async def move(self, ctx: Context):
         if ctx.invoked_subcommand is None:
             if ctx.message:
-                args = ctx.message.content.replace(_prefix(message=ctx.message), '')
+                args = ctx.message.content.replace(ctx.bot.get_prefix(message=ctx.message), '')
                 if args[:2] == 'mv':
                     args = args[2:].lstrip()
                 elif args[:4] == 'move':
@@ -197,14 +195,14 @@ class Moderation(Cog, name="Moderation", description="cog_moderation_description
         roles = ctx.message.role_mentions
 
         if _from and _to and _from.id == _to.id:
-            await ctx.send(get_text("same_channels_error"))
+            await ctx.send(ctx.bot.get_text("same_channels_error"))
 
         if inverted and len(members) == 0:
             members = [ctx.author]
         if await Moderation.channel_check(ctx, _from) and await Moderation.channel_check(ctx, _to, can_be_empty=True):
             to_move = len(_from.members)
             moved = await Moderation.move_all_members_or_with_role(_from, _to, members, roles, inverted=inverted)
-            await ctx.send(get_text("%s %s moved") % (f"``{moved}/{to_move}``", f"``{_to.name}``"))
+            await ctx.send(ctx.bot.get_text("%s %s moved") % (f"``{moved}/{to_move}``", f"``{_to.name}``"))
 
     @move.command(name='all', aliases=['a', ' '], description="command_move_all_description",
                   usage="command_move_all_usage")

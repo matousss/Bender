@@ -6,9 +6,8 @@ import bender.utils.message_handler
 # from discord.ext.commands import CommandNotFound, Cog, Context, CogMeta, CommandError
 
 
-__all__ = ['__cogs__', 'default_prefix',
-           'prefix', 'Checks', 'on_command_error',
-           'BotMissingPermissions']
+__all__ = ['__cogs__', 'Checks', 'on_command_error',
+           'BotMissingPermissions', 'ExtensionLoadError', 'ExtensionInitializeError']
 
 
 class Checks:
@@ -98,24 +97,10 @@ __cogs__ = []
 #     return cog
 
 
-# todo load from group settings
-prefixes = {
-    -1: ',',
-    767788412446048347: ','
-}
 
 
-def default_prefix() -> str:
-    return prefixes[-1]
+
 
 
 # noinspection PyUnusedLocal
-def prefix(bot=None, message: discord.Message = None) -> str:
-    if not message:
-        return prefixes[-1]
-    try:
-        if message.guild:
-            return prefixes[message.guild.id]
-    except KeyError:
-        pass
-    return prefixes[-1]
+

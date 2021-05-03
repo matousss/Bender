@@ -52,7 +52,6 @@ class Song(object):
             Raised when youtube_dl cannot download specified video
         """
         extracted = SongExtractor.extract_song_blocking(f"https://www.youtube.com/watch?v={self.details['id']}")
-        # todo ffmpeg path
         self.source = FFmpegPCMAudio(extracted[0], **FFMPEG_OPTIONS)
         self.thumbnail = extracted[1]
         pass
@@ -67,7 +66,6 @@ class Song(object):
             Raised when youtube_dl cannot download specified video
         """
         extracted = await SongExtractor.extract_song(f"https://www.youtube.com/watch?v={self.details['id']}")
-        # todo ffmpeg path
         self.source = FFmpegPCMAudio(extracted[0], **FFMPEG_OPTIONS)
         self.thumbnail = extracted[1]
         return

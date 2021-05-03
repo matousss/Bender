@@ -114,9 +114,10 @@ from bender.utils import bender_utils
 from bender.utils.config import Config
 
 # todo config
-# todo settings
 # todo texts
 # todo pydoc
+from bender.utils.message_handler import MessageHandler
+
 HELP = """
 Usage: main.py [-h | -t arg]
 
@@ -209,9 +210,10 @@ if __name__ == "__main__":
        ╚═════╝░╚══════╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝ v%s\n\n""" % bender.__version__)
     print("\nLoading...\n")
     #load_config()
-    bot = Bender(command_prefix=",", intents=intents,
+    bot = Bender(message_handler=MessageHandler(os.path.join(_temp.get_root_path(), "resources\\locales")),
+                 command_prefix=",", intents=intents,
                  activity=discord.Activity(type=discord.ActivityType.listening,
-                                           name=f"{bender_utils.default_prefix()}help"), strip_after_prefix=True)
+                                           name=f"{_temp.get_default_prefix()}help"), strip_after_prefix=True)
     bot.setup()
     print("\nStarting...\n")
 

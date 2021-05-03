@@ -7,7 +7,6 @@ _root_dir: os.PathLike = pathlib.Path(__file__).parent.parent.parent
 
 _configuration: Config = None
 
-_loaded_languages = None
 
 def set_root_path(path: os.PathLike):
     global _root_dir
@@ -27,3 +26,7 @@ def set_config(config: Config):
 def get_config() -> Config:
     global _configuration
     return _configuration
+
+
+def get_default_prefix():
+    return ','

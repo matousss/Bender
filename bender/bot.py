@@ -4,18 +4,41 @@ from warnings import warn
 
 import discord
 from discord import Guild, Forbidden, HTTPException
-from discord.ext.commands import Bot, Cog, command
+from discord.ext.commands import Bot, Cog
 
 import bender
-import bender.modules
-import bender.modules.music.youtube_music
+from discord.abc import Messageable
 
-__all__ = ['Bender']
+original_send = Messageable.send
+
+
+async def send_message(m: Messageable, *args, **kwargs):
+    print(await m._get_channel())
+    print(args)
+    print(kwargs)
+    await original_send(m, *args, **kwargs)
+
+
+Messageable.send = send_message
+
+__all__ = ['Bender', 'BenderCog']
+
+from bender.utils.message_handler import MessageHandler
 
 
 class Bender(Bot):
+    def __init__(self, *args, message_handler: MessageHandler, **kwargs, ):
+        self._message_handler = message_handler
+        self.loaded_languages = None
+
+        def m(*args):
+            return args
+
+        self.get_text = m
+        super().__init__(*args, **kwargs)
 
     async def on_ready(self):
+
         print("\n\n" + f'{self.user} has connected to Discord!\n\n')
 
         print("Connected to servers:")
@@ -35,7 +58,7 @@ class Bender(Bot):
     @staticmethod
     async def on_command(ctx: discord.ext.commands.Context):
         print(f"<INFO> {str(ctx.author.name)}#{str(ctx.author.discriminator)}"
-              f"executed command {str(ctx.command)} in {ctx.guild}#{ctx.guild.id}")
+              f"executed command {str(ctx.command)} {(f'in {ctx.guild}#{ctx.guild.id}' if ctx.guild else '')}")
 
     async def on_command_error(self, ctx, error):
         cog = ctx.cog
@@ -46,33 +69,13 @@ class Bender(Bot):
             print(f'Ignoring exception in command {ctx.command}:', file=sys.stderr)
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
-    # def setup(self):
-    #     from bender.utils.bender_utils import __cogs__ as cogs
-    #     if len(cogs) == 0:
-    #         try:
-    #             cogs = default_cogs()
-    #         except ImportError:
-    #             raise RuntimeError("Trying to do unsupported operation or is installation corrupted?")
-    #     for cog in cogs:
-    #         try:
-    #             cog = cog(self)
-    #         except bender.utils.bender_utils.BenderModuleError as e:
-    #             warn(f"Cannot initialize {cog.__name__} due to error: {e}")
-    #             continue
-    #
-    #         try:
-    #             self.add_cog(cog)
-    #         except bender.utils.bender_utils.BenderModuleError as e:
-    #             warn(f"Cannot load {cog.__name__} due to error: {e}")
-    #         except Exception as e:
-    #             print('Ignoring exception:', file=sys.stderr)
-    #             traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
-
     def setup(self):
-        bender.utils.message_handler.setup()
-
-        extensions = [bender.modules.info, bender.modules.moderation, bender.modules.voiceclient,
-                      bender.modules.settings, bender.modules.translator, bender.modules.music.youtube_music]
+        self._message_handler.setup()
+        self.loaded_languages = tuple(self._message_handler.locales.keys())
+        self.get_text = self._message_handler.get_text
+        from bender.modules import info, moderation, settings, translator, voiceclient
+        from bender.modules.music import youtube_music
+        extensions = [info, moderation, settings, translator, voiceclient, youtube_music]
         for extension in extensions:
             try:
                 extension.setup(self)
@@ -88,13 +91,11 @@ class Bender(Bot):
                 continue
 
 
+class BenderCog(Cog):
+    def __init__(self, bot: Bender) -> None:
+        self.bot = bot
+        self.get_text = bot.get_text
+        super().__init__()
+        print(f"Initialized {str(self.__class__.__name__)}")
 
-        self.add_command(self.traktor)
-
-    @staticmethod
-    @command(name="traktor")
-    async def traktor(ctx, *, args):
-        print(ctx.message.content)
-
-        print(args)
-        print(discord.utils.escape_mentions(args))
+    pass
