@@ -1,5 +1,3 @@
-import subprocess
-
 import discord
 import discord.ext.commands
 
@@ -8,37 +6,15 @@ import bender.utils.message_handler
 # from discord.ext.commands import CommandNotFound, Cog, Context, CogMeta, CommandError
 
 
-__all__ = ['BenderModuleError', '__cogs__', 'default_prefix',
-           'prefix', 'set_global_variable', 'get_global_variable', 'Checks', 'on_command_error',
+__all__ = ['__cogs__', 'default_prefix',
+           'prefix', 'Checks', 'on_command_error',
            'BotMissingPermissions']
-
-from bender.utils.temp import global_variables
 
 
 class Checks:
     @staticmethod
     async def can_join_speak(ctx: discord.ext.commands.Context):
         return ctx.me.guild_permissions.speak and ctx.me.guild_permissions.connect
-
-    # todo ffmpeg path
-    # noinspection PyBroadException
-    @staticmethod
-    def check_ffmpeg() -> bool:
-        """
-        Check for ffmpeg/avconv
-        """
-        try:
-            subprocess.check_call(['ffmpeg', '-version'],
-                                  stdout=subprocess.DEVNULL,
-                                  stderr=subprocess.STDOUT)
-        except Exception:
-            try:
-                subprocess.check_call(['avconv', '-version'],
-                                      stdout=subprocess.DEVNULL,
-                                      stderr=subprocess.STDOUT)
-            except Exception:
-                return False
-        return True
 
 
 class BotMissingPermissions(discord.ext.commands.CommandError):
@@ -84,15 +60,6 @@ async def on_command_error(ctx, error):
 #         return discord.utils.get(ctx.guild.channels, id=int(channel))
 #     else:
 #         return discord.utils.get(ctx.guild.channels, name=channel)
-
-
-class BenderModuleError(Exception):
-    """
-    Raised by modules in bender.modules
-    """
-
-    def __init__(self, message: str):
-        super().__init__(message)
 
 
 class ExtensionInitializeError(Exception):
@@ -152,18 +119,3 @@ def prefix(bot=None, message: discord.Message = None) -> str:
     except KeyError:
         pass
     return prefixes[-1]
-
-
-def set_global_variable(item, key=None):
-    if not key:
-        key = item.__name__
-    global_variables[key] = item
-
-    return global_variables[key]
-
-
-def get_global_variable(key):
-    try:
-        return global_variables[key]
-    except Exception:
-        raise

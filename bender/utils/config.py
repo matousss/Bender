@@ -7,19 +7,10 @@
 #
 # }
 import configparser
-import json
 import os
-from typing import Iterable, Union
 
 DEFAULT_CONFIG = {
-    'token': 'ODAxMDc1NDc5Mjg5MjY2MTk3.YAbZrQ.SfcU11qCo7SmHko-g0zkuChGKwk'}
-
-DEFAULT_CONFIG_1 = {
-    'BASE': {
-        'token': '',
-    },
     'YT_MUSIC': {
-        'ffmpeg_avconv_path': None,
         'max_queue_size': 20,
         'max_song_length': 7200,
         'best_quality': False,
@@ -41,12 +32,26 @@ class Config(dict):
     #         json.dump()
 
     def __init__(self, **settings):
-        self.update(DEFAULT_CONFIG)
+        self.update(**DEFAULT_CONFIG)
+        for key in settings.keys():
+            if not (key in DEFAULT_CONFIG.keys()):
+                raise AttributeError(f"Unexpected keyword argument {key}")
+
+        self.update(**settings)
         super().__init__()
 
-    def load(self, path: os.path):
-        if os.path.exists(path):
-            raise ValueError()
+    @staticmethod
+    def _check_types(_dict: dict):
+        for key in DEFAULT_CONFIG.keys():
+            try:
+                if not isinstance(_dict[key], type(DEFAULT_CONFIG[key])):
+                    raise TypeError(f"Option {key} has invalid value")
+            except KeyError:
+                raise AttributeError(f"Missing required option {key}")
+
+    def load(self, path: os.PathLike):
+        if not os.path.exists(path):
+            raise ValueError("Path is doesn't exist")
         try:
             file = open(path, 'r')
         except Exception:
@@ -56,18 +61,16 @@ class Config(dict):
             config.read_file(file)
         except Exception:
             raise
-        self.update(Config.parse_values(Config.to_dict(config)))
         file.close()
-
-    def load_all(self, paths: Iterable[Union[str, os.PathLike]]):
-        for path in paths:
-            self.load(path)
+        loaded = Config.parse_values(Config.to_dict(config))
+        Config._check_types(loaded)
+        self.update(**loaded)
 
     @staticmethod
-    def generate_new(path: os.path, *, modules: list = None, default: dict = None):
-        config = Config.to_config(DEFAULT_CONFIG_1)
+    def generate_new(path: os.path):
+        config = Config.to_config(DEFAULT_CONFIG)
 
-        with open('config.ini', 'w') as configfile:  # save
+        with open(path, 'w') as configfile:  # save
             config.write(configfile)
 
     @staticmethod
@@ -87,10 +90,10 @@ class Config(dict):
         for key in dictionary.keys():
             if isinstance(dictionary[key], dict):
                 parsed[key] = Config.parse_values(dictionary[key])
-
-            if isinstance(dictionary[key], str):
+            elif isinstance(dictionary[key], str):
                 if dictionary[key] or len(dictionary[key]) == 0 or dictionary[key] == 'None':
                     parsed[key] = None
+                    continue
                 try:
                     parsed[key] = int(dictionary[key])
                     continue
@@ -103,6 +106,7 @@ class Config(dict):
                 if dictionary[key] == 'False':
                     parsed[key] = False
                     continue
+                parsed[key] = dictionary[key]
 
         return parsed
 
@@ -115,10 +119,3 @@ class Config(dict):
         return parsed
 
 
-# path = os.path.abspath(os.path.join(".\\config.ini"))
-# print(path)
-# Config.generate_new(path)
-#
-# c = Config()
-# c.load(path)
-# print(c)

@@ -1,6 +1,4 @@
 import gettext
-# el = gettext.translation('base', localedir='locales', languages=['el'])
-# el.install()
 import os
 import pathlib
 
@@ -11,10 +9,7 @@ import bender.utils.temp
 locales = dict()
 
 
-def get_text(args: str, *, language = 'en'):
-    if args.startswith('%'):
-        print(f"<DEBUG> Asked for: {args}")
-
+def get_text(args: str, *, language='en'):
     return locales[language].gettext(args)
 
 
@@ -33,11 +28,9 @@ class MessageHandler(object):
 
 
 def setup():
-
     load_translations(pathlib.Path(os.path.join(bender.utils.temp.get_root_path(), "resources\\locales")))
     global locales
     for l in locales:
         locales[l].install()
-
     global get_text
     get_text = locales['en'].gettext

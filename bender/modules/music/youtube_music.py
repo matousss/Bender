@@ -5,6 +5,8 @@ import copy
 import datetime
 import functools
 import math
+import os
+import subprocess
 import sys
 import time
 import traceback
@@ -16,13 +18,11 @@ from discord.ext import commands, tasks
 from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure, Bot
 
 import bender.utils.bender_utils
+import bender.utils.temp as _temp
 from bender.modules.music.music import MusicPlayer, AlreadyPaused, NotPaused, NoResult as YTNoResult, \
     PlayError, QueueFull, QueueEmpty
 from bender.modules.music.song import Song
-from bender.utils.bender_utils import BenderModuleError, Checks
-
-# todo config
-MAX_SONG_DURATION = 7200
+from bender.utils.bender_utils import ExtensionLoadError, Checks
 
 is_youtube_dl = True
 try:
@@ -34,7 +34,22 @@ __all__ = ['YoutubeMusic']
 
 
 def setup(bot: Bot):
-    bot.add_cog(YoutubeMusic(bot))
+    config = _temp.get_config()
+    cog = YoutubeMusic(bot)
+
+    print(config)
+    extension_config = None
+    if config and 'YT_MUSIC' in config:
+        extension_config = config['YT_MUSIC']
+        cog.set_config(**config['YT_MUSIC'])
+
+    if not check_ffmpeg():
+        raise ExtensionLoadError(f"{__name__} requires ffmpeg or avconv to work")
+    if not is_youtube_dl:
+        raise ExtensionLoadError(f"{__name__} requires youtube_dl to work")
+
+    bot.add_cog(cog)
+    print(f"Initialized {str(cog.__class__.__name__)}")
 
 
 #
@@ -51,6 +66,24 @@ def setup(bot: Bot):
 get_text = bender.utils.message_handler.get_text
 
 PAGE_SIZE = 10
+
+
+def check_ffmpeg() -> bool:
+    """
+    Check for ffmpeg/avconv
+    """
+    try:
+        subprocess.check_call(['ffmpeg', '-version'],
+                              stdout=subprocess.DEVNULL,
+                              stderr=subprocess.STDOUT)
+    except Exception:
+        try:
+            subprocess.check_call(['avconv', '-version'],
+                                  stdout=subprocess.DEVNULL,
+                                  stderr=subprocess.STDOUT)
+        except Exception:
+            return False
+    return True
 
 
 class BotNotConnected(CheckFailure):
@@ -86,18 +119,12 @@ DEFAULT_CONFIG = {
 
 class YoutubeMusic(commands.Cog, name="Youtube Music", description="cog_youtubemusic_description"):
     def __init__(self, bot: commands.Bot):
-        if not Checks.check_ffmpeg():
-            raise BenderModuleError(f"{self.__class__.__name__} requires ffmpeg or avconv to work")
-        if not is_youtube_dl:
-            raise BenderModuleError(f"{self.__class__.__name__} requires youtube_dl to work")
         self.BOT: commands.Bot = bot
         self.players = {}
         self.join = None
         self.garbage_collector.start()
         self.config = copy.deepcopy(DEFAULT_CONFIG)
         self.player_config = copy.deepcopy(bender.modules.music.music.DEFAULT_PLAYER_CONFIG)
-
-        print(f"Initialized {str(self.__class__.__name__)}")
 
     def set_config(self, **kwargs):
         for key in kwargs.keys():
@@ -180,7 +207,8 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description="cog_youtubem
         keys = list(self.players.keys())
         for key in keys:
             player = self.players[key]
-            if player.voice_client.is_playing() and len(player.voice_client.channel.members) > 1:
+            if player.voice_client and player.voice_client.channel and player.voice_client.is_playing() and \
+                    len(player.voice_client.channel.members) > 1 and len(player.voice_client.channel.members) > 1:
                 player.last_used = int(time.time())
                 continue
             if (not player.voice_client.is_paused() and t - player.last_used > 120) or t - player.last_used > 300:
@@ -308,8 +336,8 @@ class YoutubeMusic(commands.Cog, name="Youtube Music", description="cog_youtubem
 
             # check if song isn't too long
             def check_too_long(song_to_check: Song) -> bool:
-                # todo settings
-                if song_to_check.details['duration'] > 0 and song_to_check.details['duration'] > MAX_SONG_DURATION:
+                if song_to_check.details['duration'] > 0 and \
+                        song_to_check.details['duration'] > self.config['max_song_length']:
                     return True
                 return False
 

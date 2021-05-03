@@ -87,6 +87,8 @@ class Bender(Bot):
                 traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
                 continue
 
+
+
         self.add_command(self.traktor)
 
     @staticmethod
