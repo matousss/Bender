@@ -269,7 +269,6 @@ class Database(object):
 
         if not ctx.guild:
             return _temp.get_default_language()
-        print(ctx.guild)
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, self.get_language, ctx.guild.id)
         try:
