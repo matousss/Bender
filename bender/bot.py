@@ -27,6 +27,7 @@ __all__ = ['Bender', 'BenderCog']
 from bender.utils.message_handler import MessageHandler
 from bender.utils import temp as _temp
 
+
 class Bender(Bot):
     def __init__(self, *args, message_handler: MessageHandler, **kwargs, ):
         self._message_handler = message_handler
@@ -48,13 +49,16 @@ class Bender(Bot):
 
         print(f"\n\n{self.user.name} is running!\n\n")
 
-
-    async def on_guild_join(self, guild: Guild):
+    async def on_guild_join(self, guild: Guild) -> None:
         if guild.system_channel:
             try:
                 await guild.system_channel.send(self.get_text('on_join', _temp.get_default_language()))
             except (Forbidden, HTTPException):
                 pass
+        print(f"<INFO> Joined guild {guild.name}")
+
+    async def on_guild_remove(self, guild: Guild) -> None:
+        print(f"<INFO> Left guild {guild.name}")
 
     @staticmethod
     async def on_command(ctx: discord.ext.commands.Context):
@@ -78,7 +82,7 @@ class Bender(Bot):
         self.get_text = self._message_handler.get_text
         from bender.modules import info, moderation, settings, voiceclient
         from bender.modules.music import youtube_music
-        extensions = [info, moderation, settings, voiceclient, youtube_music]
+        extensions = [settings, info, moderation, voiceclient, youtube_music]
         for extension in extensions:
             try:
                 extension.setup(self)

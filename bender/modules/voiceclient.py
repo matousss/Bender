@@ -94,7 +94,7 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
             await ctx.send(self.get_text("timeout_error", await self.get_language(ctx)))
             return
         except ClientException:
-            await ctx.send("already_connected_error")
+            await ctx.send(self.get_text("already_connected_error", await self.get_language(ctx)))
             print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
             return
 

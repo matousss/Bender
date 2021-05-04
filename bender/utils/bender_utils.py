@@ -33,7 +33,6 @@ async def on_command_error(ctx, error):
         elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
             await ctx.send(ctx.bot.get_text("missing_parameters_error",
                                             await ctx.bot.get_language(ctx)))
-            return True
         elif isinstance(error, discord.ext.commands.NoPrivateMessage):
             await ctx.send(ctx.bot.get_text("guild_only", await ctx.bot.get_language(ctx)))
         elif isinstance(error, discord.ext.commands.errors.BotMissingPermissions) or \

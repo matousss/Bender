@@ -161,8 +161,6 @@ class MusicPlayer(object):
             Variable in songs isn't :class: Song
         """
 
-
-
         if self._queue.maxlen and len(songs) + len(self._queue) > self._queue.maxlen:
             self.add_song(songs[:(self._queue.maxlen - len(self._queue))])
             songs = songs[(self._queue.maxlen - len(self._queue)):]
@@ -405,7 +403,17 @@ class MusicSearcher:
         return MusicSearcher._youtube_dl is not None
 
     @staticmethod
-    def initialize_ytdl(options: dict = settings.YTDL_OPTIONS):
+    def initialize_ytdl(options: dict = settings.YTDL_OPTIONS) -> None:
+        """
+        Initialize youtube_dl object with custom settings
+
+        Parameters
+        ----------
+        options: dict
+
+
+
+        """
 
         MusicSearcher._youtube_dl = YoutubeDL(options)
 
@@ -421,8 +429,11 @@ class MusicSearcher:
 
         Raises
         -------
-        NoResult()
+        NoResult
             for no result
+
+        DownloadError
+            connection timeout
         """
 
         def search(keywords: str):

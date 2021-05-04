@@ -447,7 +447,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                         ctx.voice_client.stop()
                     except ClientException:
                         pass
-                await ctx.send(f"{self.get_text('skip', await self.get_language(ctx))} : {qsize - player.qsize()}")
+                await ctx.send(self.get_text('%s skip', await self.get_language(ctx)) % f"``{qsize - player.qsize()}``")
         else:
             await ctx.send("not_playing_error")
             return

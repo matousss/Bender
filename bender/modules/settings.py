@@ -13,11 +13,12 @@ from bender.bot import BenderCog, Bender as Bot
 
 def setup(bot: Bot):
     cog = Settings(bot)
-    bot.add_cog(cog)
 
     bot.command_prefix = cog.get_prefix
     bot.database = cog.database
     bot.get_language = bot.database.executor_get_language
+    cog.get_language = bot.get_language
+    bot.add_cog(cog)
     print(f"Initialized {cog.__class__.__name__}")
 
 
@@ -67,12 +68,15 @@ class Settings(BenderCog, description="cog_settings_description"):
            usage="command_setting_usage")
     async def setting(self, ctx: Context):
         if not ctx.subcommand_passed:
+            lang = await self.get_language(ctx)
+            print(lang)
             embed = Embed(color=0xff0000)
-            embed.title = self.get_text("possible_settings")
+            embed.title = self.get_text("possible_settings", lang)
             embed.description = ""
             for subcommand in ctx.bot.get_command("setting").commands:
                 embed.description += f"``{subcommand.name}`` - " \
-                                     f"{subcommand.description if subcommand.description else 'NaN'}\n"
+                                     f"""{self.get_text(subcommand.description, lang)
+                                     if subcommand.description else 'NaN'}\n"""
             await ctx.send(embed=embed)
 
     @setting.command(name="prefix", description="command_setting_prefix_description",
@@ -101,19 +105,19 @@ class Settings(BenderCog, description="cog_settings_description"):
 
         try:
             if not args:
-                loop = asyncio.get_running_loop()
-                task = loop.run_in_executor(None, self._database.get_language, ctx.guild.id)
-                current_language = await asyncio.wait_for(task, timeout=10)
-                await ctx.send(self.get_text("%s current_language", await self.get_language(ctx)) % f"``{current_language}``")
-            elif args == 'languages':
+                current_language = await self.get_language(ctx)
+
+                await ctx.send(
+                    self.get_text("%s current_language", current_language) % f"``{current_language}``")
+            elif args == 'languages' or args == 'help':
                 lang = await self.get_language(ctx)
                 sb = ""
                 if ctx.bot.loaded_languages:
-                    for lang in ctx.bot.loaded_languages:
-                        sb += f"``{lang}``, "
-                        await ctx.send(self.get_text("%s possible_languages", lang) % sb[:-2])
+                    for loaded in ctx.bot.loaded_languages:
+                        sb += f"``{loaded}``, "
+                    await ctx.send(self.get_text("%s possible_languages", lang) % sb[:-2])
                 else:
-                    await ctx.send("error_no_languages", lang)
+                    await ctx.send(self.get_text("error_no_languages", lang))
             elif ctx.bot.loaded_languages and args in ctx.bot.loaded_languages:
                 args = args.lstrip()
                 loop = asyncio.get_running_loop()
@@ -272,8 +276,8 @@ class Database(object):
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, self.get_language, ctx.guild.id)
         try:
-            prefix = await asyncio.wait_for(task, timeout=2)
-            return prefix
+            lang = await asyncio.wait_for(task, timeout=2)
+            return lang
         except TimeoutError:
             pass
         return _temp.get_default_language()
