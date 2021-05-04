@@ -17,10 +17,6 @@ from bender.modules.music.song import Song, SongDetails
 __all__ = ['MusicPlayer', 'MusicSearcher', 'NotPlaying', 'NotPaused', 'AlreadyPaused', 'AlreadyPlaying', 'NoSongToPlay',
            'NoResult', 'QueueFull', 'QueueEmpty', 'PlayError']
 
-DEFAULT_PLAYER_CONFIG = {
-    'YTDL_OPTIONS': copy.deepcopy(settings.YTDL_OPTIONS),
-    'FFMPEG_OPTIONS': copy.deepcopy(settings.FFMPEG_OPTIONS)
-}
 
 
 class NotPlaying(Exception):

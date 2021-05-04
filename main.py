@@ -111,7 +111,6 @@ import discord.ext.commands
 import bender
 from bender.bot import Bender
 from bender.utils import bender_utils
-from bender.utils.config import Config
 
 # todo config
 # todo texts

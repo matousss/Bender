@@ -4,12 +4,16 @@ import asyncio
 import copy
 import datetime
 import functools
+import json
 import math
+import os
+import pathlib
 import subprocess
 import sys
 import time
 import traceback
 import typing
+from collections import deque
 from warnings import warn
 
 from discord import Embed, ClientException, Member, Forbidden, VoiceState
@@ -17,33 +21,53 @@ from discord.ext import commands, tasks
 from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure, Context
 
 import bender.utils.bender_utils
-import bender.utils.temp as _temp
 from bender.bot import Bender as Bot, BenderCog
 from bender.modules.music.music import MusicPlayer, AlreadyPaused, NotPaused, NoResult as YTNoResult, \
-    PlayError, QueueFull, QueueEmpty
+    PlayError, QueueFull, QueueEmpty, MusicSearcher
 from bender.modules.music.song import Song
+from bender.modules.music import settings as player_settings
+
+from bender.utils import temp as _temp
 from bender.utils.bender_utils import ExtensionLoadError, Checks
 
 is_youtube_dl = True
 try:
-    from youtube_dl import DownloadError
-except Exception:
+    from youtube_dl.utils import DownloadError
+except ImportError:
     is_youtube_dl = False
 
 __all__ = ['YoutubeMusic']
 
 
 def setup(bot: Bot):
-    config = _temp.get_config()
-    cog = YoutubeMusic(bot)
-
-    if config and 'YT_MUSIC' in config:
-        cog.set_config(**config['YT_MUSIC'])
-
     if not check_ffmpeg():
         raise ExtensionLoadError(f"{__name__} requires ffmpeg or avconv to work")
     if not is_youtube_dl:
         raise ExtensionLoadError(f"{__name__} requires youtube_dl to work")
+
+    config_path = os.path.join(_temp.get_root_path(), "youtube_music.cfg")
+    config = YoutubeMusicConfig(config_path)
+
+    if os.path.exists(config_path):
+        try:
+            config.load()
+        except (OSError, ValueError):
+            warn(f"Cannot read {config_path}, default configuration loaded")
+        except IllegalFormat:
+            warn(f"Config in {config_path} has illegal format, check values or "
+                 f"try deleting it and change values in new one"
+                 f"\n Loaded default configuration")
+    else:
+        config.generate_new()
+
+    cog = YoutubeMusic(bot, config=config)
+
+    if config['best_quality']:
+        ytdl_settings = copy.deepcopy(player_settings.YTDL_OPTIONS)
+        ytdl_settings['fromat'] = "bestaudio/best"
+        MusicSearcher.initialize_ytdl(ytdl_settings)
+    else:
+        MusicSearcher.initialize_ytdl()
 
     bot.add_cog(cog)
 
@@ -103,8 +127,7 @@ class NotInSameChannel(CheckFailure):
 
 
 DEFAULT_CONFIG = {
-    'ffmpeg_avconv_path': None,
-    'max_queue_size': 20,
+    'max_queue_length': -1,
     'max_song_length': 7200,
     'best_quality': False,
     'max_idle_time': 180,
@@ -112,28 +135,56 @@ DEFAULT_CONFIG = {
 }
 
 
+class IllegalFormat(Exception):
+    pass
+
+
+class YoutubeMusicConfig(dict):
+    def __init__(self, path: typing.Union[str, os.PathLike]):
+        if not os.path.exists(pathlib.Path(path).parent):
+            raise ValueError("Path doesn't exist")
+        self.path = path
+        super().__init__()
+
+    def generate_new(self):
+        with open(self.path, 'w') as file:
+            json.dump(DEFAULT_CONFIG, file, indent=2)
+
+    def load(self):
+        if not os.path.exists(self.path):
+            raise FileNotFoundError("File doesn't exist")
+
+        with open(self.path, 'r') as file:
+            loaded = json.load(file)
+        if loaded.keys() == DEFAULT_CONFIG.keys():
+            self.clear()
+            self.update(loaded)
+        else:
+            raise IllegalFormat()
+
+
 class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusic_description"):
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Bot, **kwargs):
         self.players = {}
         self.join = None
         self.garbage_collector.start()
-        self.config = copy.deepcopy(DEFAULT_CONFIG)
-        self.player_config = copy.deepcopy(bender.modules.music.music.DEFAULT_PLAYER_CONFIG)
+
+        if kwargs:
+            if 'config' in kwargs.keys():
+                self.config = kwargs.pop('config')
+            else:
+                self.config = dict()
+            for key in DEFAULT_CONFIG:
+                if key in kwargs.keys():
+                    self.config[key] = kwargs.pop(key)
+                elif key not in self.config:
+                    self.config[key] = DEFAULT_CONFIG[key]
+            if kwargs:
+                raise ValueError(f"Unexpected keyword arguments {kwargs}")
+
+        else:
+            self.config = copy.deepcopy(DEFAULT_CONFIG)
         super().__init__(bot)
-
-    def set_config(self, **kwargs):
-        for key in kwargs.keys():
-            if key in self.config:
-                self.config[key] = kwargs[key]
-            else:
-                raise ValueError("Unexpected keyword argument: %s" % key)
-
-    def set_player_config(self, **kwargs):
-        for key in kwargs.keys():
-            if key in self.config:
-                self.player_config[key] = kwargs[key]
-            else:
-                raise ValueError("Unexpected keyword argument: %s" % key)
 
     def cog_unload(self):
         self.garbage_collector.cancel()
@@ -163,8 +214,6 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
 
     @commands.Cog.listener()
     async def on_ready(self):
-        bender.modules.music.music.MusicSearcher.initialize_ytdl(self.player_config['YTDL_OPTIONS'])
-
         self.join = self.bot.get_command('join')
 
         if not self.join:
@@ -175,7 +224,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
             self.bot.remove_cog(self.qualified_name)
 
         if not bender.modules.music.music.MusicSearcher.initialized():
-            warn(f"{bender.modules.music.music.MusicSearcher.__name__} is not initialized")
+            warn(f"{bender.modules.music.music.MusicSearcher.__name__} is not initialized -> cannot play from youtube")
 
     def is_player(self, arg: typing.Union[commands.Context, str]) -> bool:
         if isinstance(arg, commands.Context):
@@ -299,7 +348,9 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
         if ctx.guild.id in self.players.keys():
             player: MusicPlayer = self.players[ctx.guild.id]
         else:
-            self.players[ctx.guild.id] = MusicPlayer(ctx.voice_client)
+            self.players[ctx.guild.id] = MusicPlayer(ctx.voice_client,
+                                                     deque(maxlen=self.config['max_queue_length']
+                                                         if self.config['max_queue_length'] > 0 else None))
             player: MusicPlayer = self.players[ctx.guild.id]
 
         async with player.lock:
