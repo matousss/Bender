@@ -1,8 +1,24 @@
 import discord
 import discord.ext.commands
 
-__all__ = ['Checks', 'on_command_error',
+__all__ = ['BenderCog','Checks', 'on_command_error',
            'BotMissingPermissions', 'ExtensionLoadError', 'ExtensionInitializeError']
+
+from discord.ext.commands import Cog
+
+
+
+
+class BenderCog(Cog):
+    def __init__(self, bot) -> None:
+        self.bot = bot
+        self.get_text = bot.get_text
+        self.get_language = bot.get_language
+        super().__init__()
+        print(f"Initialized {str(self.__class__.__name__)}")
+
+    pass
+
 
 
 class Checks:

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import copy
 import datetime
@@ -19,33 +17,25 @@ from warnings import warn
 from discord import Embed, ClientException, Member, Forbidden, VoiceState
 from discord.ext import commands, tasks
 from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFailure, Context
+from youtube_dl.utils import DownloadError
 
 import bender.utils.bender_utils
-from bender.bot import Bender as Bot, BenderCog
+from bender.modules.music import settings as player_settings
 from bender.modules.music.music import MusicPlayer, AlreadyPaused, NotPaused, NoResult as YTNoResult, \
     PlayError, QueueFull, QueueEmpty, MusicSearcher
 from bender.modules.music.song import Song
-from bender.modules.music import settings as player_settings
-
 from bender.utils import temp as _temp
+from bender.utils.bender_utils import BenderCog
 from bender.utils.bender_utils import ExtensionLoadError, Checks
-
-is_youtube_dl = True
-try:
-    from youtube_dl.utils import DownloadError
-except ImportError:
-    is_youtube_dl = False
 
 __all__ = ['YoutubeMusic']
 
 
-def setup(bot: Bot):
+def setup(bot):
     if not check_ffmpeg():
         raise ExtensionLoadError(f"{__name__} requires ffmpeg or avconv to work")
-    if not is_youtube_dl:
-        raise ExtensionLoadError(f"{__name__} requires youtube_dl to work")
 
-    config_path = os.path.join(_temp.get_root_path(), "youtube_music.cfg")
+    config_path = os.path.join(_temp.get_root_path(), "youtube_music.json")
     config = YoutubeMusicConfig(config_path)
 
     if os.path.exists(config_path):
@@ -164,7 +154,7 @@ class YoutubeMusicConfig(dict):
 
 
 class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusic_description"):
-    def __init__(self, bot: Bot, **kwargs):
+    def __init__(self, bot, **kwargs):
         self.players = {}
         self.join = None
         self.garbage_collector.start()
@@ -189,7 +179,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
     def cog_unload(self):
         self.garbage_collector.cancel()
 
-    async def cog_command_error(self, ctx: commands.Context, error):
+    async def cog_command_error(self, ctx: Context, error):
         if isinstance(error, CommandInvokeError):
             error = error.__cause__
 
@@ -226,15 +216,15 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
         if not bender.modules.music.music.MusicSearcher.initialized():
             warn(f"{bender.modules.music.music.MusicSearcher.__name__} is not initialized -> cannot play from youtube")
 
-    def is_player(self, arg: typing.Union[commands.Context, str]) -> bool:
-        if isinstance(arg, commands.Context):
+    def is_player(self, arg: typing.Union[Context, str]) -> bool:
+        if isinstance(arg, Context):
             return arg.guild.id in self.players.keys() and self.players[arg.guild.id] is not None
 
         elif isinstance(arg, int):
             return arg in self.players.keys() and self.players[arg] is not None
 
         else:
-            raise TypeError(f"arg must be {int.__name__} or {commands.Context.__name__} "
+            raise TypeError(f"arg must be {int.__name__} or {Context.__name__} "
                             f"and not {arg.__class__.__name__}")
 
     @commands.Cog.listener()
@@ -271,16 +261,16 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                     except Exception:
                         pass
 
-    def can_play(self, ctx: commands.Context) -> bool:
+    def can_play(self, ctx: Context) -> bool:
         return self.is_player(ctx) and ctx.voice_client.is_connected()
 
-    def is_playing(self, ctx: commands.Context) -> bool:
+    def is_playing(self, ctx: Context) -> bool:
         return self.is_player(ctx) and ctx.voice_client.is_playing()
 
-    def is_paused(self, ctx: commands.Context) -> bool:
+    def is_paused(self, ctx: Context) -> bool:
         return self.is_player(ctx) and ctx.voice_client.is_paused()
 
-    def cog_check(self, ctx: commands.Context):
+    def cog_check(self, ctx: Context):
         if ctx.guild is None:
             raise NoPrivateMessage()
         if ctx.command == self.play:
@@ -331,7 +321,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                       usage="command_play_usage")
     @commands.check(Checks.can_join_speak)
     @commands.cooldown(rate=1, per=3, type=commands.BucketType.guild)
-    async def play(self, ctx: commands.Context, *, what: str):
+    async def play(self, ctx: Context, *, what: str):
         # check if in voice channel, connect to some if not
         lang = await self.get_language(ctx)
         if not ctx.voice_client or not ctx.voice_client.is_connected():
@@ -350,7 +340,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
         else:
             self.players[ctx.guild.id] = MusicPlayer(ctx.voice_client,
                                                      deque(maxlen=self.config['max_queue_length']
-                                                         if self.config['max_queue_length'] > 0 else None))
+                                                     if self.config['max_queue_length'] > 0 else None))
             player: MusicPlayer = self.players[ctx.guild.id]
 
         async with player.lock:
@@ -506,7 +496,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
     @commands.command(name='remove', aliases=['rm'], description="command_remove_description",
                       usage="command_remove_usage")
     @commands.cooldown(1, 5, commands.BucketType.guild)
-    async def remove(self, ctx: commands.Context, position: int, *,
+    async def remove(self, ctx: Context, position: int, *,
                      error: typing.Optional[str] = None):
         lang = await self.get_language(ctx)
         if error:
@@ -630,7 +620,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
     @commands.command(name='pause', description="command_pause_description",
                       usage="")
     @commands.cooldown(1, 2, commands.BucketType.guild)
-    async def pause(self, ctx: commands.Context):
+    async def pause(self, ctx: Context):
         lang = await self.get_language(ctx)
         if self.is_playing(ctx):
             player = self.players[ctx.guild.id]
@@ -648,7 +638,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
     @commands.command(name='resume', description="command_resume_description",
                       usage="")
     @commands.cooldown(1, 2, commands.BucketType.guild)
-    async def resume(self, ctx: commands.Context):
+    async def resume(self, ctx: Context):
         lang = await self.get_language(ctx)
         if self.is_paused(ctx):
             player = self.players[ctx.guild.id]
@@ -666,7 +656,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
     @commands.command(name='loop', description="command_loop_description",
                       usage="")
     @commands.cooldown(1, 2, commands.BucketType.guild)
-    async def loop(self, ctx: commands.Context):
+    async def loop(self, ctx: Context):
         lang = await self.get_language(ctx)
         if self.is_player(ctx) and ctx.voice_client.is_connected():
             player = self.players[ctx.guild.id]

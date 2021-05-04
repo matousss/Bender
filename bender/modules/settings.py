@@ -5,17 +5,18 @@ import sqlite3
 import typing
 
 from discord import Message, Embed, Guild
-from discord.ext.commands import group, Context
+from discord.ext.commands import group, Context, NoPrivateMessage
 
 import bender.utils.temp as _temp
-from bender.bot import BenderCog, Bender as Bot
+from bender.utils.bender_utils import BenderCog
 
 
-def setup(bot: Bot):
+def setup(bot):
     cog = Settings(bot)
 
     bot.command_prefix = cog.get_prefix
     bot.database = cog.database
+    bot.database.setup()
     bot.get_language = bot.database.executor_get_language
     cog.get_language = bot.get_language
     bot.add_cog(cog)
@@ -59,10 +60,9 @@ class Settings(BenderCog, description="cog_settings_description"):
         task = loop.run_in_executor(None, self._database.remove_guild, guild.id)
         await asyncio.wait_for(task, timeout=None)
 
-    def cog_check(self, ctx):
-        if ctx.guild:
-            return True
-        return False
+    def cog_check(self, ctx: Context):
+        if ctx.guild is None:
+            raise NoPrivateMessage()
 
     @group(name="setting", aliases=["set"], description="command_setting_description",
            usage="command_setting_usage")
@@ -282,7 +282,7 @@ class Database(object):
             pass
         return _temp.get_default_language()
 
-    def prepare_db(self, bot: Bot) -> None:
+    def prepare_db(self, bot) -> None:
         guild_ids = []
         for guild in bot.guilds:
             self.add_guild(guild.id)

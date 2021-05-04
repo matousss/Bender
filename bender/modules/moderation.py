@@ -2,13 +2,13 @@ import typing
 
 import discord.utils as discord_utils
 from discord import VoiceChannel, Member, HTTPException, Message
-from discord.ext.commands import Cog, Context, group, guild_only, Bot
-
+from discord.ext.commands import Cog, Context, group, guild_only
+from bender.utils.bender_utils import BenderCog
 
 __all__ = ['Moderation']
 
 
-def setup(bot: Bot):
+def setup(bot):
     bot.add_cog(Moderation(bot))
 
 
@@ -24,7 +24,7 @@ def setup(bot: Bot):
 #
 
 
-class Moderation(Cog, name="Moderation", description="cog_moderation_description"):
+class Moderation(BenderCog, name="Moderation", description="cog_moderation_description"):
 
     def __init__(self, bot):
         self.bot = bot

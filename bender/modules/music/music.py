@@ -9,7 +9,9 @@ from collections import deque
 from typing import Union
 
 from discord import VoiceClient
+
 from youtube_dl import YoutubeDL
+
 
 from bender.modules.music import settings
 from bender.modules.music.song import Song, SongDetails

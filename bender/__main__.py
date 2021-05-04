@@ -109,10 +109,10 @@ import discord
 import discord.ext.commands
 
 import bender
+import bender.utils.temp as _temp
 from bender.bot import Bender
 # todo pydoc
 from bender.utils.message_handler import MessageHandler
-import bender.utils.temp as _temp
 
 HELP = """
 Usage: main.py [-h | -t arg]
@@ -161,7 +161,8 @@ async def start(_token: str, _bot: discord.ext.commands.Bot, is_bot: bool = True
 
 
 def main():
-    _temp.set_root_path(pathlib.Path(__file__).parent)
+    _temp.set_root_path(pathlib.Path(__file__).parent.parent)
+
     token = None
     if len(sys.argv) > 1:
         if len(sys.argv) > 3:
@@ -174,22 +175,27 @@ def main():
         elif sys.argv[1] in ("--token", "-t"):
             token = sys.argv[2]
 
-    token = load_token(pathlib.Path(__file__).parent.joinpath("./token.token"))
+    if not token:
+        token = load_token(os.path.join(_temp.get_root_path(), "token.token"))
 
     intents = discord.Intents.default()
     intents.members = True
-    print("""\n\n\033[97m
+    print("""\n\n
        ██████╗░███████╗███╗░░██╗██████╗░███████╗██████╗░
        ██╔══██╗██╔════╝████╗░██║██╔══██╗██╔════╝██╔══██╗
        ██████╦╝█████╗░░██╔██╗██║██║░░██║█████╗░░██████╔╝
        ██╔══██╗██╔══╝░░██║╚████║██║░░██║██╔══╝░░██╔══██╗
        ██████╦╝███████╗██║░╚███║██████╔╝███████╗██║░░██║
-       ╚═════╝░╚══════╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝ v%s\n\n\033[0m""" % bender.__version__)
+       ╚═════╝░╚══════╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝ v%s\n\n""" % bender.__version__)
     print("\nLoading...\n")
 
     message_handler = MessageHandler()
-    locales_path = os.path.join(_temp.get_root_path(), "resources\\locales")
-    message_handler.setup(locales_path)
+    locales_path = os.path.join(pathlib.Path(_temp.get_root_path()), "resources\\locales")
+    try:
+        message_handler.setup(locales_path)
+    except ValueError():
+        pass
+
     bot = Bender(message_handler=message_handler,
                  command_prefix=",", intents=intents,
                  activity=discord.Activity(type=discord.ActivityType.listening,

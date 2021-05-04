@@ -5,9 +5,9 @@ import discord
 from discord import VoiceChannel, ClientException
 from discord.ext.commands import BucketType, command, cooldown, Context, guild_only
 
-import bender.utils.bender_utils
+from bender.utils.bender_utils import ExtensionInitializeError
 import bender.utils.message_handler
-from bender.bot import BenderCog, Bender as Bot
+from bender.utils.bender_utils import BenderCog
 
 try:
     import nacl.secret
@@ -17,7 +17,7 @@ except ImportError:
     is_nacl = False
 
 
-def setup(bot: Bot):
+def setup(bot):
     bot.add_cog(VoiceClientCommands(bot))
 
 
@@ -34,10 +34,10 @@ def setup(bot: Bot):
 
 
 class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voiceclientcommands_description"):
-    def __init__(self, bot: Bot):
+    def __init__(self, bot):
 
         if not is_nacl:
-            raise bender.utils.bender_utils.BenderModuleError(
+            raise ExtensionInitializeError(
                 f"{self.__class__.__name__} requires PyNaCl library to work with "
                 f"discord.VoiceClient")
         super().__init__(bot)

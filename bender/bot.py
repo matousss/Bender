@@ -1,3 +1,4 @@
+import importlib
 import sys
 import traceback
 from warnings import warn
@@ -8,25 +9,11 @@ from discord.ext.commands import Bot, Cog, Context
 
 import bender
 
-# from discord.abc import Messageable
-#
-# original_send = Messageable.send
-#
-#
-# async def send_message(m: Messageable, *args, **kwargs):
-#     print(await m._get_channel())
-#     print(args)
-#     print(kwargs)
-#     await original_send(m, *args, **kwargs)
-#
-#
-# Messageable.send = send_message
-
-__all__ = ['Bender', 'BenderCog']
-
 from bender.utils.message_handler import MessageHandler
 from bender.utils import temp as _temp
+import bender.modules
 
+__all__ = ['Bender', 'BenderCog']
 
 class Bender(Bot):
     def __init__(self, *args, message_handler: MessageHandler, **kwargs, ):
@@ -80,17 +67,17 @@ class Bender(Bot):
     def setup(self):
         self.loaded_languages = tuple(self._message_handler.locales.keys())
         self.get_text = self._message_handler.get_text
-        from bender.modules import info, moderation, settings, voiceclient
-        from bender.modules.music import youtube_music
-        extensions = [settings, info, moderation, voiceclient, youtube_music]
+        extensions = ["bender.modules.info", "bender.modules.moderation", "bender.modules.settings",
+                      "bender.modules.voiceclient", "bender.modules.music.youtube_music"]
         for extension in extensions:
             try:
-                extension.setup(self)
+                imported = importlib.import_module(extension)
+                imported.setup(self)
             except bender.utils.bender_utils.ExtensionInitializeError as e:
-                warn(f"Cannot initialize {extension.__name__} due to error: {e}")
+                warn(f"Cannot initialize {imported.__name__} due to error: {e}")
                 continue
             except bender.utils.bender_utils.ExtensionLoadError as e:
-                warn(f"Cannot load {extension.__name__} due to error: {e}")
+                warn(f"Cannot load {imported.__name__} due to error: {e}")
                 continue
             except Exception as e:
                 print('Ignoring exception:', file=sys.stderr)

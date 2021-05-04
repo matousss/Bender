@@ -6,13 +6,12 @@ from discord.ext.commands import Cog, command, Context, cooldown, Command, Group
 import bender
 import bender.utils.bender_utils
 import bender.utils.message_handler
+from bender.utils.bender_utils import BenderCog
 
 __all__ = ['Info']
 
-from bender.bot import BenderCog, Bender as Bot
 
-
-def setup(bot: Bot):
+def setup(bot):
     bot.remove_command('help')
     bot.add_cog(Info(bot))
 
@@ -30,7 +29,7 @@ def setup(bot: Bot):
 
 
 class Info(BenderCog, name="Information", description="cog_info_description"):
-    def __init__(self, bot: Bot):
+    def __init__(self, bot):
 
         super().__init__(bot)
 
@@ -48,7 +47,7 @@ class Info(BenderCog, name="Information", description="cog_info_description"):
                        f"``{str(round(float(ctx.bot.latency) * 1000.0))} ms``")
 
     @staticmethod
-    def have_uncategorized_commands(bot: Bot):
+    def have_uncategorized_commands(bot):
         for _command in bot.walk_commands():
             if not _command.cog:
                 return True
@@ -102,7 +101,7 @@ class Info(BenderCog, name="Information", description="cog_info_description"):
                 return
             embed.title = self.get_text('%s showing_help_for',
                                         lang) % self.get_text("commands_with_no_category",
-                                                                                      lang)
+                                                              lang)
             commands = ""
             for _command in ctx.bot.walk_commands():
                 if not _command.cog:
