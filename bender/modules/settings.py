@@ -63,6 +63,7 @@ class Settings(BenderCog, description="cog_settings_description"):
     def cog_check(self, ctx: Context):
         if ctx.guild is None:
             raise NoPrivateMessage()
+        return True
 
     @group(name="setting", aliases=["set"], description="command_setting_description",
            usage="command_setting_usage")
