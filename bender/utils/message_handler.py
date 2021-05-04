@@ -13,8 +13,10 @@ class MessageHandler(object):
         self.locales = dict()
 
     def get_text(self, message: str, language: str = 'en'):
-
-        return self.locales[language].gettext(message)
+        try:
+            return self.locales[language].gettext(message)
+        except KeyError:
+            return message
 
     def load_translations(self, path: os.PathLike):
         if not os.path.exists(path):

@@ -110,12 +110,9 @@ import discord.ext.commands
 
 import bender
 from bender.bot import Bender
-from bender.utils import bender_utils
-
-# todo config
-# todo texts
 # todo pydoc
 from bender.utils.message_handler import MessageHandler
+import bender.utils.temp as _temp
 
 HELP = """
 Usage: main.py [-h | -t arg]
@@ -149,40 +146,21 @@ def load_token(_path: os.path):
         exit(0)
 
 
-def load_config():
-    config_path = os.path.join(_temp.get_root_path(), "config.ini")
-    try:
-        if not os.path.exists(config_path):
-            Config.generate_new(config_path)
-            _temp.set_config(Config())
-            return
-        config = Config()
-        config.load(config_path)
-
-    except OSError:
-        print(f"Cannot access {config_path}", file=sys.stderr)
-        exit_after_enter()
-        return
-    _temp.set_config(config)
-
-
 async def start(_token: str, _bot: discord.ext.commands.Bot, is_bot: bool = True):
     try:
         await _bot.login(_token, bot=is_bot)
     except discord.LoginFailure:
-        print("Login token is invalid", file=sys.stderr)
+        print("\033[91mLogin token is invalid")
         exit_after_enter()
         return
     except discord.HTTPException:
-        print("Cannot reach Discord, please check your internet connection", file=sys.stderr)
+        print("\033[91mCannot reach Discord, please check your internet connection")
         exit_after_enter()
         return
     await _bot.connect(reconnect=True)
 
 
-if __name__ == "__main__":
-    import bender.utils.temp as _temp
-
+def main():
     _temp.set_root_path(pathlib.Path(__file__).parent)
     token = None
     if len(sys.argv) > 1:
@@ -200,22 +178,40 @@ if __name__ == "__main__":
 
     intents = discord.Intents.default()
     intents.members = True
-    print("""\n\n
+    print("""\n\n\033[97m
        ██████╗░███████╗███╗░░██╗██████╗░███████╗██████╗░
        ██╔══██╗██╔════╝████╗░██║██╔══██╗██╔════╝██╔══██╗
        ██████╦╝█████╗░░██╔██╗██║██║░░██║█████╗░░██████╔╝
        ██╔══██╗██╔══╝░░██║╚████║██║░░██║██╔══╝░░██╔══██╗
        ██████╦╝███████╗██║░╚███║██████╔╝███████╗██║░░██║
-       ╚═════╝░╚══════╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝ v%s\n\n""" % bender.__version__)
+       ╚═════╝░╚══════╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝ v%s\n\n\033[0m""" % bender.__version__)
     print("\nLoading...\n")
-    #load_config()
+
     message_handler = MessageHandler()
-    message_handler.setup(os.path.join(_temp.get_root_path(), "resources\\locales"))
+    locales_path = os.path.join(_temp.get_root_path(), "resources\\locales")
+    message_handler.setup(locales_path)
     bot = Bender(message_handler=message_handler,
                  command_prefix=",", intents=intents,
                  activity=discord.Activity(type=discord.ActivityType.listening,
                                            name=f"{_temp.get_default_prefix()}help"), strip_after_prefix=True)
+    if len(message_handler.locales) == 0:
+        print(f"""\033[91mCouldn't load any message files.
+        Please make sure, that message files are in correct directory
+        e.g.:
+            resources
+            └── locales/
+                ├── en/
+                |   └── LC_MESSAGES/
+                |       └── messages.po
+                └── cs/
+                    └── LC_MESSAGES/
+                        └── messages.po  
+
+        """)
+        exit_after_enter()
+
     bot.setup()
+
     print("\nStarting...\n")
 
     loop = asyncio.get_event_loop()
@@ -227,3 +223,7 @@ if __name__ == "__main__":
     finally:
         if loop.is_running():
             loop.close()
+
+
+if __name__ == "__main__":
+    main()
