@@ -108,7 +108,8 @@ import sys
 import discord
 import discord.ext.commands
 
-import bender
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
+
 import bender.utils.temp as _temp
 from bender.bot import Bender
 # todo pydoc
@@ -186,7 +187,7 @@ def main():
        ██████╦╝█████╗░░██╔██╗██║██║░░██║█████╗░░██████╔╝
        ██╔══██╗██╔══╝░░██║╚████║██║░░██║██╔══╝░░██╔══██╗
        ██████╦╝███████╗██║░╚███║██████╔╝███████╗██║░░██║
-       ╚═════╝░╚══════╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝ v%s\n\n""" % bender.__version__)
+       ╚═════╝░╚══════╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝ \n\n""")
     print("\nLoading...\n")
 
     message_handler = MessageHandler()

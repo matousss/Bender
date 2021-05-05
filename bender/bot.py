@@ -7,13 +7,12 @@ import discord
 from discord import Guild, Forbidden, HTTPException
 from discord.ext.commands import Bot, Cog, Context
 
-import bender
-
-from bender.utils.message_handler import MessageHandler
+import bender.utils.bender_utils
 from bender.utils import temp as _temp
-import bender.modules
+from bender.utils.message_handler import MessageHandler
 
 __all__ = ['Bender', 'BenderCog']
+
 
 class Bender(Bot):
     def __init__(self, *args, message_handler: MessageHandler, **kwargs, ):
@@ -74,10 +73,10 @@ class Bender(Bot):
                 imported = importlib.import_module(extension)
                 imported.setup(self)
             except bender.utils.bender_utils.ExtensionInitializeError as e:
-                warn(f"Cannot initialize {imported.__name__} due to error: {e}")
+                warn(f"Cannot initialize {extension} due to error: {e}")
                 continue
             except bender.utils.bender_utils.ExtensionLoadError as e:
-                warn(f"Cannot load {imported.__name__} due to error: {e}")
+                warn(f"Cannot load {extension} due to error: {e}")
                 continue
             except Exception as e:
                 print('Ignoring exception:', file=sys.stderr)

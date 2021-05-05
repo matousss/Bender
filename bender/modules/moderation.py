@@ -2,7 +2,7 @@ import typing
 
 import discord.utils as discord_utils
 from discord import VoiceChannel, Member, HTTPException, Message
-from discord.ext.commands import Cog, Context, group, guild_only
+from discord.ext.commands import Context, group, guild_only, MissingRequiredArgument
 from bender.utils.bender_utils import BenderCog
 
 __all__ = ['Moderation']
@@ -28,7 +28,7 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
 
     def __init__(self, bot):
         self.bot = bot
-        print(f"Initialized {str(self.__class__.__name__)}")
+        super().__init__(bot)
 
     @staticmethod
     async def channel_check(ctx: Context, destination, *, can_be_empty: bool = False):
@@ -121,7 +121,7 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
     @staticmethod
     async def kick_command(ctx, args, *, inverted: bool = False):
         destination_name = Moderation.get_raw_channels(ctx.message, args)
-        destination = discord_utils.get(ctx.guild.channels, name=Moderation.get_raw_channels(ctx.message, args))
+        destination = discord_utils.get(ctx.guild.channels, name=destination_name)
         members = ctx.message.mentions
         roles = ctx.message.role_mentions
 
@@ -178,6 +178,9 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
     @staticmethod
     async def move_command(ctx, args, inverted: bool = False):
         channel_names_raw = Moderation.get_raw_channels(ctx.message, args)
+        if not channel_names_raw:
+            raise MissingRequiredArgument("destination channel")
+
         if channel_names_raw and ';' in channel_names_raw:
             channel_names = channel_names_raw.split(';', 1)
             _from = discord_utils.get(ctx.guild.channels, name=channel_names[0].strip())
@@ -197,7 +200,7 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
         roles = ctx.message.role_mentions
 
         if _from and _to and _from.id == _to.id:
-            await ctx.send(ctx.bot.get_text("same_channels_error"), await ctx.bot.get_language(ctx))
+            await ctx.send(ctx.bot.get_text("same_channels_error", await ctx.bot.get_language(ctx)))
             return
         if inverted and len(members) == 0:
             members = [ctx.author]

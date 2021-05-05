@@ -9,7 +9,7 @@ setuptools.setup(
     author='matousss',
     author_email='jaroslav.matous@student.gyarab.cz',
     description='Bender - Multipurpose Discord bot',
-    zip_safe=False,
+    zip_safe=True,
     install_requires=[
         'discord.py~=1.7.1',
         'PyNaCl~=1.4.0',
