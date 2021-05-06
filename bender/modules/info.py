@@ -34,14 +34,12 @@ class Info(BenderCog, name="Information", description="cog_info_description"):
         super().__init__(bot)
 
     @command(name="info", description="command_info_description", usage="")
-    @cooldown(1, .5)
-    async def _info(self, ctx: Context):
+    async def info(self, ctx: Context):
         await ctx.send(self.get_text("%s info", await self.get_language(ctx)) % f'``{bender.__version__}``')
         pass
 
     @command(name="ping", description="command_ping_description",
              usage="")
-    @cooldown(1, .5)
     async def ping(self, ctx: Context):
         await ctx.send(self.get_text('%s ping', await self.get_language(ctx)) %
                        f"``{str(round(float(ctx.bot.latency) * 1000.0))} ms``")

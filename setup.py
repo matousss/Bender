@@ -20,7 +20,7 @@ setuptools.setup(
             'bender = bender.__main__:main',
         ],
     },
-    data_files=[('resources/locales/en/LC_MESSAGES', ['resources/locales/en/LC_MESSAGES/messages.mo']),
-                ('resources/locales/cs/LC_MESSAGES', ['resources/locales/cs/LC_MESSAGES/messages.mo'])]
+    data_files=[('Lib/site-packages/bender/resources/locales/en/LC_MESSAGES', ['bender/resources/locales/en/LC_MESSAGES/messages.mo']),
+                ('Lib/site-packages/bender/resources/locales/cs/LC_MESSAGES', ['bender/resources/locales/cs/LC_MESSAGES/messages.mo'])]
 
 )

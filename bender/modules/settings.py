@@ -5,7 +5,7 @@ import sqlite3
 import typing
 
 from discord import Message, Embed, Guild
-from discord.ext.commands import group, Context, NoPrivateMessage
+from discord.ext.commands import group, Context, NoPrivateMessage, cooldown
 
 import bender.utils.temp as _temp
 from bender.utils.bender_utils import BenderCog
@@ -67,6 +67,7 @@ class Settings(BenderCog, description="cog_settings_description"):
 
     @group(name="setting", aliases=["set"], description="command_setting_description",
            usage="command_setting_usage")
+    @cooldown(1, 3)
     async def setting(self, ctx: Context):
         if not ctx.subcommand_passed:
             lang = await self.get_language(ctx)
@@ -156,7 +157,7 @@ class Database(object):
     def setup(self):
         with self.connect() as connection:
             connection.execute("""
-            CREATE TABLE if NOT EXISTS guilds (
+            CREATE TABLE IF NOT EXISTS guilds (
                 id INTEGER NOT NULL PRIMARY KEY,
                 prefix CHARACTER(5) NOT NULL DEFAULT ',',
                 language CHARACTER(3) NOT NULL DEFAULT 'en'

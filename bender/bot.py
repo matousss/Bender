@@ -18,11 +18,7 @@ class Bender(Bot):
     def __init__(self, *args, message_handler: MessageHandler, **kwargs, ):
         self._message_handler = message_handler
         self.loaded_languages = None
-
-        def m(*args):
-            return args
-
-        self.get_text = m
+        self.get_text = None
         super().__init__(*args, **kwargs)
 
     async def on_ready(self):
@@ -85,10 +81,14 @@ class Bender(Bot):
 
 
 class BenderCog(Cog):
+    async def get_text(self, ctx: Context, message_key: str):
+        return self.bot.get_text(message_key, await self.bot.get_language(ctx))
+
+
     def __init__(self, bot: Bender) -> None:
         self.bot = bot
         self.get_text = bot.get_text
-        self.get_language = bot.get_language
+
         super().__init__()
         print(f"Initialized {str(self.__class__.__name__)}")
 

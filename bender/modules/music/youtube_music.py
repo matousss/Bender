@@ -245,7 +245,8 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                     len(player.voice_client.channel.members) > 1 and len(player.voice_client.channel.members) > 1:
                 player.last_used = int(time.time())
                 continue
-            if (not player.voice_client.is_paused() and t - player.last_used > 120) or t - player.last_used > 300:
+            if (not player.voice_client.is_paused() and t - player.last_used > self.config['max_idle_time']) \
+                    or t - player.last_used > self.config['max_paused_time']:
                 if player.voice_client.is_connected():
                     await player.voice_client.disconnect()
                     player.clear()

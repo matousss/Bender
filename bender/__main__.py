@@ -162,7 +162,7 @@ async def start(_token: str, _bot: discord.ext.commands.Bot, is_bot: bool = True
 
 
 def main():
-    _temp.set_root_path(pathlib.Path(__file__).parent.parent)
+    _temp.set_root_path(pathlib.Path(__file__).parent)
 
     token = None
     if len(sys.argv) > 1:
@@ -194,7 +194,7 @@ def main():
     locales_path = os.path.join(pathlib.Path(_temp.get_root_path()), "resources\\locales")
     try:
         message_handler.setup(locales_path)
-    except ValueError():
+    except ValueError:
         pass
 
     bot = Bender(message_handler=message_handler,
