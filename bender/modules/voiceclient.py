@@ -7,7 +7,7 @@ from discord.ext.commands import BucketType, command, cooldown, Context, guild_o
 
 from bender.utils.bender_utils import ExtensionInitializeError
 import bender.utils.message_handler
-from bender.utils.bender_utils import BenderCog
+from bender.bot import BenderCog
 
 try:
     import nacl.secret
@@ -44,7 +44,6 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
 
     @command(name="join", aliases=["j", "summon"], description="command_join_description",
              usage="command_join_usage")
-    @guild_only()
     @cooldown(1, 10, BucketType.guild)
     async def join(self, ctx: Context, *, channel: typing.Optional[str] = None):
         if ctx.voice_client and ctx.voice_client.is_connected():
@@ -100,7 +99,6 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
 
     @command(name="disconnect", aliases=["dis", "leave", "l"], description="command_disconnect_description",
              usage="")
-    @guild_only()
     @cooldown(1, 10, BucketType.user)
     async def disconnect(self, ctx: Context):
         if ctx.voice_client:

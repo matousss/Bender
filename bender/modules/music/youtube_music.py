@@ -25,7 +25,7 @@ from bender.modules.music.music import MusicPlayer, AlreadyPaused, NotPaused, No
     PlayError, QueueFull, QueueEmpty, MusicSearcher
 from bender.modules.music.song import Song
 from bender.utils import temp as _temp
-from bender.utils.bender_utils import BenderCog
+from bender.bot import BenderCog
 from bender.utils.bender_utils import ExtensionLoadError, Checks
 
 __all__ = ['YoutubeMusic']

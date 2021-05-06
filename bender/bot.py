@@ -1,11 +1,12 @@
 import importlib
 import sys
 import traceback
+from datetime import datetime
 from warnings import warn
 
 import discord
 from discord import Guild, Forbidden, HTTPException
-from discord.ext.commands import Bot, Cog, Context
+from discord.ext.commands import Bot, Cog, Context, NoPrivateMessage
 
 import bender.utils.bender_utils
 from bender.utils import temp as _temp
@@ -14,12 +15,19 @@ from bender.utils.message_handler import MessageHandler
 __all__ = ['Bender', 'BenderCog']
 
 
+def guild_only(ctx):
+    if not ctx.guild:
+        raise NoPrivateMessage("Command can be used only in guild")
+    return True
+
+
 class Bender(Bot):
     def __init__(self, *args, message_handler: MessageHandler, **kwargs, ):
         self._message_handler = message_handler
         self.loaded_languages = None
         self.get_text = None
         super().__init__(*args, **kwargs)
+        self.add_check(guild_only)
 
     async def on_ready(self):
 
@@ -37,14 +45,13 @@ class Bender(Bot):
                 await guild.system_channel.send(self.get_text('on_join', _temp.get_default_language()))
             except (Forbidden, HTTPException):
                 pass
-        print(f"<INFO> Joined guild {guild.name}")
+        print(f"<INFO> [{datetime.now().strftime('%H:%M:%S')}] Joined guild {guild.name}")
 
     async def on_guild_remove(self, guild: Guild) -> None:
-        print(f"<INFO> Left guild {guild.name}")
+        print(f"<INFO> [{datetime.now().strftime('%H:%M:%S')}] Left guild {guild.name}")
 
-    @staticmethod
-    async def on_command(ctx: discord.ext.commands.Context):
-        print(f"<INFO> {str(ctx.author.name)}#{str(ctx.author.discriminator)}"
+    async def on_command(self, ctx: discord.ext.commands.Context):
+        print(f"<INFO> [{datetime.now().strftime('%H:%M:%S')}] {str(ctx.author.name)}#{str(ctx.author.discriminator)}"
               f"executed command {str(ctx.command)} {(f'in {ctx.guild}#{ctx.guild.id}' if ctx.guild else '')}")
 
     async def on_command_error(self, ctx, error):
@@ -81,14 +88,10 @@ class Bender(Bot):
 
 
 class BenderCog(Cog):
-    async def get_text(self, ctx: Context, message_key: str):
-        return self.bot.get_text(message_key, await self.bot.get_language(ctx))
-
-
     def __init__(self, bot: Bender) -> None:
         self.bot = bot
-        self.get_text = bot.get_text
-
+        self.get_text = self.bot.get_text
+        self.get_language = self.bot.get_language
         super().__init__()
         print(f"Initialized {str(self.__class__.__name__)}")
 

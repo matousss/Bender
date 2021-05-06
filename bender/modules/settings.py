@@ -8,7 +8,7 @@ from discord import Message, Embed, Guild
 from discord.ext.commands import group, Context, NoPrivateMessage, cooldown
 
 import bender.utils.temp as _temp
-from bender.utils.bender_utils import BenderCog
+from bender.bot import BenderCog
 
 
 def setup(bot):

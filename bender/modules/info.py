@@ -6,7 +6,7 @@ from discord.ext.commands import Cog, command, Context, cooldown, Command, Group
 import bender
 import bender.utils.bender_utils
 import bender.utils.message_handler
-from bender.utils.bender_utils import BenderCog
+from bender.bot import BenderCog
 
 __all__ = ['Info']
 
@@ -30,7 +30,6 @@ def setup(bot):
 
 class Info(BenderCog, name="Information", description="cog_info_description"):
     def __init__(self, bot):
-
         super().__init__(bot)
 
     @command(name="info", description="command_info_description", usage="")

@@ -3,7 +3,7 @@ import typing
 import discord.utils as discord_utils
 from discord import VoiceChannel, Member, HTTPException, Message
 from discord.ext.commands import Context, group, guild_only, MissingRequiredArgument, cooldown
-from bender.utils.bender_utils import BenderCog
+from bender.bot import BenderCog
 
 __all__ = ['Moderation']
 
@@ -102,12 +102,11 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
 
     @group(name="kick", aliases=["k"], description="command_kick_description",
            usage="command_kick_usage")
-    @guild_only()
     @cooldown(1, 3)
     async def kick(self, ctx: Context):
         if ctx.invoked_subcommand is None:
             if ctx.message:
-                args = ctx.message.content.replace(ctx.bot.get_prefix(ctx.message), '')
+                args = ctx.message.content.replace(await ctx.bot.get_prefix(ctx.message), '')
                 if args[0] == 'k':
                     args = args[2:].lstrip()
                 elif args[:4] == 'kick':
@@ -161,7 +160,6 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
 
     @group(name="move", aliases=["mv"], description="command_move_description",
            usage="command_move_usage")
-    @guild_only()
     @cooldown(1, 3)
     async def move(self, ctx: Context):
         if ctx.invoked_subcommand is None:
