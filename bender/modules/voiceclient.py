@@ -4,11 +4,11 @@ from datetime import datetime
 
 import discord
 from discord import VoiceChannel, ClientException
-from discord.ext.commands import BucketType, command, cooldown, Context, guild_only
+from discord.ext.commands import BucketType, command, cooldown, Context
 
-from bender.utils.bender_utils import ExtensionInitializeError
 import bender.utils.message_handler
 from bender.bot import BenderCog
+from bender.utils.bender_utils import ExtensionInitializeError
 
 try:
     import nacl.secret
@@ -52,7 +52,7 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
 
     @command(name="join", aliases=["j", "summon"], description="command_join_description",
              usage="command_join_usage")
-    @cooldown(1, 5, BucketType.guild)
+    @cooldown(1, 2, BucketType.guild)
     async def join(self, ctx: Context, *, channel: typing.Optional[str] = None):
         """
         Command `join`
@@ -63,27 +63,29 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
         channel : str, optional
             Name of channel
        """
-
-
+        destination = None
         if channel is not None:
             if isinstance(channel, VoiceChannel):
                 destination = channel
             else:
-                destination = discord.utils.get(ctx.guild.channels, name=channel)
-                if not destination:
-                    await ctx.send(f'{self.get_text("no_channel", await self.get_language(ctx))}: {channel}')
-                    return
+                destination = discord.utils.get(ctx.guild.voice_channels, name=channel)
+
 
         elif ctx.author.voice and ctx.author.voice.channel:
             destination = ctx.author.voice.channel
 
-        else:
+        if not destination:
             await ctx.send(self.get_text("no_channel_error", await self.get_language(ctx)))
             return
 
-        if ctx.voice_client and ctx.voice_client.is_connected() and channel is None:
-            if ctx.voice_client.channel == ctx.author.voice.channel:
-                await ctx.send(self.get_text("join_error_same_channel"))
+        if destination.permissions_for(ctx.me).connect is False:
+            raise bender.utils.bender_utils.BotMissingPermissions()
+        if destination.permissions_for(ctx.me).speak is False:
+            raise bender.utils.bender_utils.BotMissingPermissions()
+
+        if ctx.voice_client and ctx.voice_client.is_connected() and destination:
+            if ctx.voice_client.channel.id == destination.id:
+                await ctx.send(self.get_text("join_error_same_channel", await self.get_language(ctx)))
                 return
             else:
                 lang = await self.get_language(ctx)
@@ -92,22 +94,25 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
                     await ctx.send(f"{self.get_text('join', lang)} {destination.name}")
 
                 except Exception:
+                    print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
                     await ctx.send(self.get_text("unknown_join_error", lang))
                 return
 
-        if destination.permissions_for(ctx.me).connect is False:
-            raise bender.utils.bender_utils.BotMissingPermissions()
-        if destination.permissions_for(ctx.me).speak is False:
-            raise bender.utils.bender_utils.BotMissingPermissions()
+
 
         try:
-            await destination.connect(timeout=10)
+            if ctx.voice_client and ctx.voice_client.is_connected():
+                await destination.move(timeout=10)
+            else:
+                await destination.connect(timeout=10)
             await ctx.send(self.get_text('%s join', await self.get_language(ctx)) % f"``{destination.name}``")
-            print(f"<INFO> [{datetime.now().strftime('%H:%M:%S')}] Joined channel " + destination.name + "#" + str(destination.id))
+            print(f"<INFO> [{datetime.now().strftime('%H:%M:%S')}] Joined channel " + destination.name + "#" + str(
+                destination.id))
         except asyncio.TimeoutError:
             await ctx.send(self.get_text("timeout_error", await self.get_language(ctx)))
             return
-        except ClientException:
+        except ClientException as e:
+            raise e
             await ctx.send(self.get_text("already_connected_error", await self.get_language(ctx)))
             print("<ERROR> Error occurred while joining " + destination.name + "#" + str(destination.id))
             return

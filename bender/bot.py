@@ -53,6 +53,7 @@ class Bender(Bot):
     <https://discordpy.readthedocs.io/en/stable/ext/commands/api.html?highlight=bot#discord.ext.commands.Bot>
     """
 
+
     def __init__(self, *args, message_handler: MessageHandler, **kwargs, ):
         """
         Parameters
