@@ -6,6 +6,7 @@ import time
 import traceback
 from asyncio import get_running_loop, run_coroutine_threadsafe, wait_for, Lock
 from collections import deque
+from datetime import datetime
 from typing import Union
 
 from discord import VoiceClient
@@ -245,7 +246,7 @@ class MusicPlayer(object):
 
                 return
             except VoiceClientError:
-                print("<INFO> Bot was kicked or lost connection to the channel")
+                print(f"<INFO> [{datetime.now().strftime('%H:%M:%S')}] Bot was kicked or lost connection to the channel")
 
         if not song.source:
             await wait_for(song.prepare_to_go(), timeout=None)

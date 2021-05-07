@@ -94,7 +94,7 @@ class Bender(Bot):
         print(f"<INFO> [{datetime.now().strftime('%H:%M:%S')}] Left guild {guild.name}")
 
     async def on_command(self, ctx: discord.ext.commands.Context):
-        print(f"<INFO> [{datetime.now().strftime('%H:%M:%S')}] {str(ctx.author.name)}#{str(ctx.author.discriminator)}"
+        print(f"<INFO> [{datetime.now().strftime('%H:%M:%S')}] {str(ctx.author.name)}#{str(ctx.author.discriminator)} "
               f"executed command {str(ctx.command)} {(f'in {ctx.guild}#{ctx.guild.id}' if ctx.guild else '')}")
 
     async def on_command_error(self, ctx, error):

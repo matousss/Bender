@@ -1,5 +1,6 @@
 import asyncio
 import typing
+from datetime import datetime
 
 import discord
 from discord import VoiceChannel, ClientException
@@ -102,7 +103,7 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
         try:
             await destination.connect(timeout=10)
             await ctx.send(self.get_text('%s join', await self.get_language(ctx)) % f"``{destination.name}``")
-            print("<INFO> Joined channel " + destination.name + "#" + str(destination.id))
+            print(f"<INFO> [{datetime.now().strftime('%H:%M:%S')}] Joined channel " + destination.name + "#" + str(destination.id))
         except asyncio.TimeoutError:
             await ctx.send(self.get_text("timeout_error", await self.get_language(ctx)))
             return
