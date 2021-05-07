@@ -52,7 +52,7 @@ class Info(BenderCog, name="Information", description="cog_info_description"):
 
     @command(name="help", description="command_help_description",
              usage="command_help_usage")
-    @cooldown(1, .5)
+    @cooldown(1, .2)
     async def help(self, ctx: Context, *, args: Optional[str] = None):
         lang = await ctx.bot.get_language(ctx)
         embed = Embed(color=0xff0000)
@@ -71,7 +71,7 @@ class Info(BenderCog, name="Information", description="cog_info_description"):
                 embed.add_field(name='Other', value=self.get_text("commands_with_no_category",
                                                                   lang))
 
-                embed.set_footer(text=self.get_text("command_help_tips", lang))
+            embed.set_footer(text=self.get_text("command_help_tips", lang))
 
         elif args.lower() == "commands":
             # show all possible commands

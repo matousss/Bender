@@ -1,8 +1,10 @@
+# matousss was here
+
 import setuptools
 
 setuptools.setup(
     name='bender',
-    version='0.20.5b0',
+    version='0.20.7b0',
     packages=['bender', 'bender.utils', 'bender.modules', 'bender.modules.music'],
     url='',
     license='',
@@ -20,7 +22,9 @@ setuptools.setup(
             'bender = bender.__main__:main',
         ],
     },
-    data_files=[('Lib/site-packages/bender/resources/locales/en/LC_MESSAGES', ['bender/resources/locales/en/LC_MESSAGES/messages.mo']),
-                ('Lib/site-packages/bender/resources/locales/cs/LC_MESSAGES', ['bender/resources/locales/cs/LC_MESSAGES/messages.mo'])]
+    data_files=[('Lib/site-packages/bender/resources/locales/en/LC_MESSAGES',
+                 ['bender/resources/locales/en/LC_MESSAGES/messages.mo']),
+                ('Lib/site-packages/bender/resources/locales/cs/LC_MESSAGES',
+                 ['bender/resources/locales/cs/LC_MESSAGES/messages.mo'])]
 
 )

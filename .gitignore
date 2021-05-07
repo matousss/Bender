@@ -2,3 +2,6 @@
 /main.spec
 /config.ini
 /.gitignore
+/dist
+/bender.egg-info
+/build

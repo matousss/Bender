@@ -38,9 +38,14 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
         if not destination.permissions_for(ctx.me).move_members:
             await ctx.send(ctx.bot.get_text("bot_missing_permissions_error", await ctx.bot.get_language(ctx)))
             return False
+        if not destination.permissions_for(ctx.author).move_members:
+            await ctx.send("user_missing_permissions_error")
+            return False
+
         if len(destination.members) == 0 and not can_be_empty:
             await ctx.send(ctx.bot.get_text("empty_channel_error", await ctx.bot.get_language(ctx)))
             return False
+
         return True
 
     @staticmethod
@@ -143,9 +148,7 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
                                             await ctx.bot.get_language(ctx)) % (f"``{kicked}/{to_kick}``",
                                                                                 f"``{destination.name}``"))
 
-        else:
-            await ctx.send("user_missing_permissions_error")
-            return
+
 
     @kick.command(name='all', aliases=['a', ' '], description="command_kick_all_description",
                   usage="command_kick_all_usage")

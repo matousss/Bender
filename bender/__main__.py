@@ -201,7 +201,7 @@ def main():
                  command_prefix=",", intents=intents,
                  activity=discord.Activity(type=discord.ActivityType.listening,
                                            name=f"{_temp.get_default_prefix()}help"), strip_after_prefix=True)
-    if len(message_handler.locales) == 0:
+    if len(message_handler.get_loaded()) == 0:
         print(f"""\033[91mCouldn't load any message files.
         Please make sure, that message files are in correct directory
         e.g.:

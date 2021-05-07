@@ -1,0 +1,473 @@
+# matousss, 2021.
+msgid ""
+msgstr ""
+"Project-Id-Version: Bender\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-05-03 23:44+0200\n"
+"PO-Revision-Date: 2021-05-07 15:48+0200\n"
+"Last-Translator: matousss\n"
+"Language-Team: matousss\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: plurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 2.4.2\n"
+
+msgid "%d queue_more"
+msgstr "A další (%d)..."
+
+msgid "%s %s kicked"
+msgstr "Odpojil jsem %s z %s."
+
+msgid "%s %s moved"
+msgstr "Přesunul jsem %s do %s."
+
+msgid "%s skip"
+msgstr "⏭️ Přeskočeno %s"
+
+msgid "%s added_to_queue"
+msgstr "%s položek bylo přidáno do fronty."
+
+msgid "%s current_language"
+msgstr "Současný jazyk je %s (Čeština)."
+
+msgid "%s current_prefix"
+msgstr "Momentálně nastavený prefix je %s."
+
+msgid "%s error_not_owner"
+msgstr "Ty nejsi vlastník %s! Tento příkaz je pouze pro vlastníka bota!"
+
+msgid "%s error_too_long"
+msgstr "Audio %s je příliš dlouhé, mohu přehrát pouze audio kratší než 2h!"
+
+msgid "%s info"
+msgstr ""
+"Jsem víceúčelový bot vytvořený pomocí knihovny discord.py.\n"
+"[https://github.com/Rapptz/discord.py]\n"
+"Momentálně běží verze %s."
+
+msgid "%s in_queue"
+msgstr "Ve frontě (%s):"
+
+msgid "%s invalid_argument"
+msgstr "Neplatný argument: %s"
+
+msgid "%s join"
+msgstr "Připojen k %s"
+
+msgid "%s no_page_error"
+msgstr "Strana %s neexistuje."
+
+msgid "%s on_cooldown_error"
+msgstr "Tento příkaz je možné použít jednou za %s"
+
+msgid "%s page"
+msgstr "Strana %s"
+
+msgid "%s ping"
+msgstr "Odezva: %s"
+
+msgid "%s possible_languages"
+msgstr "Podporované jazyky: %s"
+
+msgid "%s queue_full"
+msgstr "Fronta je plná! Některé položky nebylo možné přidat %s."
+
+msgid "%s removed"
+msgstr "Odstraněno %s z fronty."
+
+msgid "%s showing_help_for"
+msgstr "Zobrazuji nápovědu pro %s:"
+
+msgid "aliases"
+msgstr "Aliasy:"
+
+msgid "already_connected_error"
+msgstr "Již jsem připojen k tomuto hlasovému kanálu!"
+
+msgid "already_paused_error"
+msgstr "⏯️ Hudba již byla pozastavena"
+
+msgid "bot_missing_permissions_error"
+msgstr "Nemám potřebná oprávnění pro tuto akci!"
+
+msgid "bot_not_connected_error"
+msgstr ""
+"Tuto akci není možné provést, protože nejsem připojen do hlasového kanálu."
+
+msgid "channel"
+msgstr "Uploader:"
+
+msgid "channel_empty"
+msgstr "Kanál je prázndý."
+
+msgid "channel_not_match_error"
+msgstr "Pro tuto akci musíš být ve stejném kanálu, jako já!"
+
+msgid "command_help_tips"
+msgstr "[] - Volitelný argument <> - Povinný argument"
+
+msgid "command_usage"
+msgstr "Použití:"
+
+msgid "commands_with_no_category"
+msgstr "Nezařazené příkazy"
+
+msgid "emptiness"
+msgstr "Taková prázdnota"
+
+msgid "empty_channel_error"
+msgstr "Uvedený kanál je prázdný"
+
+msgid "ends_in"
+msgstr "Končí za:"
+
+msgid "found"
+msgstr "🎵 Nalezeno"
+
+msgid "guild_only"
+msgstr "Tento příkaz je možné použít pouze na serveru!"
+
+msgid "help_categories"
+msgstr "Kategorie"
+
+msgid "help_categories_description"
+msgstr "Zobraz nápovědu pro jednotlivé kapitoly pomocí ``help <ketegorie>``"
+
+msgid "join_error_same_channel"
+msgstr "Již jsem připojen do tohoto kanálu."
+
+msgid "leave_error"
+msgstr "Nastala chyba při pokusu o odpojení."
+
+msgid "loop_off"
+msgstr "▶️ Smyčka vypnuta"
+
+msgid "loop_on"
+msgstr "🔁 Smyčka zapnuta"
+
+msgid "missing_parameters_error"
+msgstr "Chybí povinné parametr! Zkontroluj zadaný příkaz a zkus to znovu."
+
+msgid "no_category"
+msgstr "Nazařazené:"
+
+msgid "no_category_or_command"
+msgstr "Příkaz nebo kategorie s tímto názvem neexistuje."
+
+msgid "no_channel_error"
+msgstr "Nemohu nalézt kanál s tímto jménem."
+
+msgid "not_found_error"
+msgstr ""
+"Nic jsem nenašel. Zkontroluj zda jsi název nebo adresu zadal správně a zkus "
+"to znovu."
+
+msgid "not_paused_error"
+msgstr "⏯️ Hudba není pozastavená."
+
+msgid "not_playing"
+msgstr "🔇 Momentálně nehraje žádná hudba."
+
+msgid "now_playing"
+msgstr "Právě hraje"
+
+msgid "on_join"
+msgstr "Použij  ``,help`` pro zobrazení nápovědy."
+
+msgid "paused"
+msgstr "⏸️ Hudba byla pozastavena."
+
+msgid "play_error"
+msgstr "Nastala chyba při přehrávání."
+
+msgid "playing_error_different_channel"
+msgstr "Již hraji v jiném kanálu."
+
+msgid "position"
+msgstr "Pozice ve frontě:"
+
+msgid "position_error"
+msgstr "Na této pozici není žádná skladba."
+
+msgid "possible_command_tips"
+msgstr "Nápovědu pro jednotlivé příkazy zobrazíš pomocí \"help <příkaz>\""
+
+msgid "possible_commands"
+msgstr "Dostupné příkazy:"
+
+msgid "possible_settings"
+msgstr "Dostupné možnosti:"
+
+msgid "prefix_too_long_error"
+msgstr "Prefix je příliš dlouhý, vyber si prosím jiný."
+
+msgid "queue"
+msgstr "Fronta:"
+
+msgid "queue_full"
+msgstr "Fronta je plná!"
+
+msgid "queue_size_error"
+msgstr "Zadané číslo je větší než je délka fronty -> Přeskakuji vše ⏭️"
+
+msgid "resumed"
+msgstr "▶️ Pokračuji v přehrávání."
+
+msgid "same_channels_error"
+msgstr "Zdrojový a konečný kanál se shoduje."
+
+msgid "searching"
+msgstr "🔎 Hledám… "
+
+msgid "setting_not_supported_language_error"
+msgstr "Tento jazyk není prozatím podporován"
+
+msgid "song_duration"
+msgstr "Délka skladby:"
+
+msgid "subcommands"
+msgstr "Podpříkazy:"
+
+msgid "timeout_error"
+msgstr "Došlo ke ztrátě spojení, zkus to prosím znovu."
+
+msgid "title"
+msgstr "Název:"
+
+msgid "track_stacked"
+msgstr "Přehráváni se zaseklo a skončilo tak dříve."
+
+msgid "unexpected_error"
+msgstr "Nastala neočekávaná chyba."
+
+msgid "unknown_join_error"
+msgstr "Nastala neznámá chyba při pokusu o spojení."
+
+msgid "unknown_playing_error"
+msgstr "Nastala chyba při přehrávání."
+
+msgid "unknown_remove_error"
+msgstr "Nastala chyba při odebírání položek."
+
+msgid "unknown_setting_language_error"
+msgstr "Nastala chyba při pokusu změnit jazyk."
+
+msgid "unknown_setting_prefix_error"
+msgstr "Nastala chyba při pokusu změnit prefix."
+
+msgid "user_missing_permissions_error"
+msgstr "Nemáš potřebná oprávnění pro tuto akci!"
+
+msgid "user_not_connected_error"
+msgstr "Pro tuto akci musíš být připojený do hlasového kanálu."
+
+msgid "command_info_description"
+msgstr "Zobrazí základní informace o botovi"
+
+msgid "command_ping_description"
+msgstr "Zobrazí odezvu"
+
+msgid "command_kick_others_description"
+msgstr ""
+"Odpojí všechny uživatele ze specifikovaného hlasového kanálu, kromě toho kdo "
+"příkaz vyvolal.\n"
+"Pokud není kanál specifikován, je použit kanál, ke kterému je uživatel právě "
+"připojen.\n"
+"Také je možné přímo označit uživatele nebo role, kteří nebudou odpojeni."
+
+msgid "command_kick_others_usage"
+msgstr "[kanál] [@uživatel] [@uživatel] [@role]..."
+
+msgid "command_kick_description"
+msgstr ""
+"Odpojí uživatele ze specifikovaného hlasového kanálu, lze specifikovat, "
+"které odpojit, nebo které z odpojení vynechat.\n"
+"Pokud není kanál specifikován, je použit kanál, ke kterému je uživatel právě "
+"připojen."
+
+msgid "command_kick_usage"
+msgstr "[all/others] [odkud] [@uživatel] [@uživatel] [@role]..."
+
+msgid "command_kick_all_description"
+msgstr ""
+"Odpojí všechny uživatele ze specifikovaného hlasového kanálu.\n"
+"Pokud není kanál specifikován, je použit kanál, ke kterému je uživatel právě "
+"připojen.\n"
+"Také je možné značit uživatele nebo role, kteří budou odpojeni."
+
+msgid "command_kick_all_usage"
+msgstr "[odkud] [@uživatel] [@uživatel] [@role]..."
+
+msgid "command_move_others_description"
+msgstr ""
+"Přesune všechny uživatele ze specifikovaného hlasového kanálu do jiného "
+"kanálu.\n"
+"Pokud není výchozí kanál specifikován, je použit kanál, ke kterému je "
+"uživatel právě připojen.\n"
+"Také je možné značit uživatele nebo role, kteří nebudou přesunuti.\n"
+"Pro oddělení jmen kanálů použijte  ``;``. Pokud jméno obsahuje ``;`` "
+"nahraďte jej ``.|``."
+
+msgid "command_move_description"
+msgstr ""
+"Přesune  všechny uživatele ze specifikovaného hlasového kanálu do jiného "
+"kanálu.\n"
+"Pokud není výchozí kanál specifikován, je použit kanál, ke kterému je "
+"uživatel právě připojen.\n"
+"Také je možné označit uživatele nebo role, kteří budou nebo nebudou "
+"přesunuti.\n"
+"Pro oddělení jmen kanálů použijte  ``;``. Pokud jméno obsahuje ``;`` "
+"nahraďte jej ``.|``."
+
+msgid "command_move_usage"
+msgstr "[all/others] [odkud] <kam> [@člen] [@člen] [@role]..."
+
+msgid "command_move_all_description"
+msgstr ""
+"Přesune  všechny uživatele ze specifikovaného hlasového kanálu do jiného "
+"kanálu.\n"
+"Pokud není výchozí kanál specifikován, je použit kanál, ke kterému je "
+"uživatel právě připojen.\n"
+"Také je možné označit uživatele nebo role, kteří budou přesunuti.\n"
+"Pro oddělení jmen kanálů použijte  ``;``. Pokud jméno obsahuje ``;`` "
+"nahraďte jej ``.|``."
+
+msgid "command_move_all_usage"
+msgstr "[odkud] <kam> [@uživatel] [@uživatel] [@role]..."
+
+msgid "command_move_others_usage"
+msgstr "[odkud] <kam> [@uživatel] [@uživatel] [@role]..."
+
+msgid "command_join_description"
+msgstr ""
+"Připojí bota do specifikovaného kanálu\n"
+"Pokud není žádný kanál specifikován, připojí bota do kanálu uživatele, který "
+"příkaz zadal"
+
+msgid "command_join_usage"
+msgstr "[název kanálu]"
+
+msgid "command_disconnect_description"
+msgstr "Odpojí bota z hlasového kanálu, pokud je k nějakému připojen"
+
+msgid "command_play_description"
+msgstr ""
+"Přidá skladbu do fronty\n"
+"Pokud hudba nehraje, začne ji přehrávat"
+
+msgid "command_play_usage"
+msgstr "<url/název skladby>"
+
+msgid "command_setting_description"
+msgstr "Tento příkaz slouží k přizpůsobení chování bota"
+
+msgid "command_setting_usage"
+msgstr "<možnost> [nová hodnota]"
+
+msgid "command_setting_prefix_description"
+msgstr "Změň prefix příkazů na cokoliv cheš"
+
+msgid "command_setting_prefix_usage"
+msgstr "[nový prefix]"
+
+msgid "command_setting_language_description"
+msgstr "Změní jazyk zpráv"
+
+msgid "command_setting_language_usage"
+msgstr "[kód nového jazyka]"
+
+msgid "command_skip_description"
+msgstr ""
+"Přeskočí určitý počet položek ve frontě.\n"
+"⚠️ Varování: Pokud je režim aktivní přehrávání ve smyčce, skladby jsou z "
+"fronty odstraněny"
+
+msgid "command_skip_usage"
+msgstr "[počet]"
+
+msgid "command_remove_description"
+msgstr "Odstraní z fronty skladbu na určité pozici"
+
+msgid "command_remove_usage"
+msgstr "<pozice ve frontě>"
+
+msgid "command_nowplaying_description"
+msgstr "Zobrazí informace o právě přehrávané skladbě"
+
+msgid "command_queue_description"
+msgstr "Zobrazí frontu"
+
+msgid "command_queue_usage"
+msgstr "[strana]"
+
+msgid "command_pause_description"
+msgstr "Pozastaví právě přehrávanou hudbu."
+
+msgid "command_resume_description"
+msgstr "Spustí pozastavenou hudbu."
+
+msgid "command_loop_description"
+msgstr ""
+"Zapne nebo vypne režim smyčky. \n"
+"Když je režim smyčky aktivní přehrávané skladby se vloží po skončení zpět do "
+"fronty."
+
+msgid "cog_info_description"
+msgstr "Příkazy týkající se informací"
+
+msgid "cog_moderation_description"
+msgstr "Příkazy pro usnadnění moderace"
+
+msgid "cog_settings_description"
+msgstr ""
+"Příkazy pro přizpůsobení chování bota\n"
+"⚠️ Varování: Pro použití jakéhokoliv příkazu v této kategorii je vyžadováno "
+"mít práva na úporavu "
+
+msgid "cog_voiceclientcommands_description"
+msgstr "Příkazy pro připojení bota do hlasového kanálu"
+
+msgid "cog_youtubemusic_description"
+msgstr "Příkazy pro přehrávání hudby z YouTube"
+
+msgid "command_help_usage"
+msgstr "[příkaz/kategorie]"
+
+msgid "command_help_description"
+msgstr ""
+"Zobrazí nápovědu..\n"
+"``help commands`` zobrazí všechny dostupné příkazy."
+
+#~ msgid "no_result"
+#~ msgstr ""
+#~ "Nic jsem nenašel. Zkontroluj zda jsi název nebo adresu zadal správně a "
+#~ "zkus to znovu."
+
+#~ msgid "message_too_long"
+#~ msgstr "Your message is too long, please split it to multiple."
+
+#~ msgid "translate_error_invalid_code"
+#~ msgstr "Specified language code or both codes are invalid."
+
+#~ msgid "command_translate_description"
+#~ msgstr ""
+#~ "Translate given text using google translator.\n"
+#~ "You can specify source language and destination language.\n"
+#~ "When destination language wasn't specified text will be translated to "
+#~ "default language of guild.\n"
+#~ "Example: ``,translate {en} {de} Hello World!``"
+
+#~ msgid "command_translate_usage"
+#~ msgstr ""
+#~ "[[{source language code}] {destination language code}] <text to translate>"
+
+#~ msgid "cog_googletranslator_description"
+#~ msgstr "Commands to help you with translation"
+
+#~ msgid "%s translate_error_invalid_code"
+#~ msgstr "%s is invalid language code!"
+
+#~ msgid "command_leave_description"
+#~ msgstr "Disconnect bot from any voice channel."

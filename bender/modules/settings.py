@@ -5,7 +5,7 @@ import sqlite3
 import typing
 
 from discord import Message, Embed, Guild
-from discord.ext.commands import group, Context, NoPrivateMessage, cooldown
+from discord.ext.commands import group, Context, NoPrivateMessage, cooldown, check
 
 import bender.utils.temp as _temp
 from bender.bot import BenderCog
@@ -69,9 +69,11 @@ class Settings(BenderCog, description="cog_settings_description"):
            usage="command_setting_usage")
     @cooldown(1, 3)
     async def setting(self, ctx: Context):
+        if not ctx.author.guild_permissions.manage_guild:
+            await ctx.send(self.get_text("user_missing_permissions_error", await self.get_language(ctx)))
+            return
         if not ctx.subcommand_passed:
             lang = await self.get_language(ctx)
-            print(lang)
             embed = Embed(color=0xff0000)
             embed.title = self.get_text("possible_settings", lang)
             embed.description = ""

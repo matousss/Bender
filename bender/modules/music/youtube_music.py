@@ -24,9 +24,9 @@ from bender.modules.music import settings as player_settings
 from bender.modules.music.music import MusicPlayer, AlreadyPaused, NotPaused, NoResult as YTNoResult, \
     PlayError, QueueFull, QueueEmpty, MusicSearcher
 from bender.modules.music.song import Song
-from bender.utils import temp as _temp
+from bender.utils import temp as _temp, bender_utils
 from bender.bot import BenderCog
-from bender.utils.bender_utils import ExtensionLoadError, Checks
+from bender.utils.bender_utils import ExtensionLoadError
 
 __all__ = ['YoutubeMusic']
 
@@ -210,11 +210,12 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
             message = f"Can't load cog {self.__class__.__name__} because it requires join command from " \
                       f"VoiceClientCommands "
             # raise BenderModuleError(message)
-            warn(message)
+            print(message, file=sys.stderr)
             self.bot.remove_cog(self.qualified_name)
 
         if not bender.modules.music.music.MusicSearcher.initialized():
-            warn(f"{bender.modules.music.music.MusicSearcher.__name__} is not initialized -> cannot play from youtube")
+            print(f"{bender.modules.music.music.MusicSearcher.__name__} is not initialized -> cannot play from youtube",
+                  file=sys.stderr)
 
     def is_player(self, arg: typing.Union[Context, str]) -> bool:
         if isinstance(arg, Context):
@@ -242,11 +243,13 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
         for key in keys:
             player = self.players[key]
             if player.voice_client and player.voice_client.channel and player.voice_client.is_playing() and \
-                    len(player.voice_client.channel.members) > 1 and len(player.voice_client.channel.members) > 1:
+                    len(player.voice_client.channel.members) > 1:
                 player.last_used = int(time.time())
                 continue
             if (not player.voice_client.is_paused() and t - player.last_used > self.config['max_idle_time']) \
                     or t - player.last_used > self.config['max_paused_time']:
+                if player.voice_client.is_playing():
+                    player.voice_client.stop()
                 if player.voice_client.is_connected():
                     await player.voice_client.disconnect()
                     player.clear()
@@ -320,7 +323,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
 
     @commands.command(name="play", aliases=["p"], description="command_play_description",
                       usage="command_play_usage")
-    @commands.check(Checks.can_join_speak)
+    @commands.check(bender_utils.can_join_speak)
     @commands.cooldown(rate=1, per=3, type=commands.BucketType.guild)
     async def play(self, ctx: Context, *, what: str):
         # check if in voice channel, connect to some if not
@@ -526,7 +529,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
         if self.is_playing(ctx) or self.is_paused(ctx):
             player = self.players[ctx.guild.id]
         else:
-            await ctx.send("not_playing_error", lang)
+            await ctx.send(self.get_text("not_playing_error", lang))
             return
         if player.now_playing:
             song = player.now_playing
@@ -615,7 +618,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
                         value=sb,
                         inline=False)
 
-        embed.set_footer(text=f"{self.get_text('page', lang)} {page}/{pages}")
+        embed.set_footer(text=self.get_text('%s page', lang) % f"{page}/{pages}")
         await ctx.send(embed=embed)
 
     @commands.command(name='pause', description="command_pause_description",

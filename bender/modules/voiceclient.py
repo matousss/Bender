@@ -35,6 +35,13 @@ def setup(bot):
 
 class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voiceclientcommands_description"):
     def __init__(self, bot):
+        """
+        Parameters
+        ----------
+        bot : Bender
+            Bot to which is cog added
+            Must be :class: ``Bender`` or child of :class: ``Cog``, with implemented methods `get_text, get_language`
+        """
 
         if not is_nacl:
             raise ExtensionInitializeError(
@@ -44,12 +51,19 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
 
     @command(name="join", aliases=["j", "summon"], description="command_join_description",
              usage="command_join_usage")
-    @cooldown(1, 10, BucketType.guild)
+    @cooldown(1, 5, BucketType.guild)
     async def join(self, ctx: Context, *, channel: typing.Optional[str] = None):
-        if ctx.voice_client and ctx.voice_client.is_connected():
-            # raise ClientException("Already connected to voice channel")
-            await ctx.send(self.get_text("already_connected_error", await self.get_language(ctx)))
-            return
+        """
+        Command `join`
+
+        Parameters
+        ----------
+        ctx : Context
+        channel : str, optional
+            Name of channel
+       """
+
+
         if channel is not None:
             if isinstance(channel, VoiceChannel):
                 destination = channel
@@ -99,7 +113,7 @@ class VoiceClientCommands(BenderCog, name="Voice client", description="cog_voice
 
     @command(name="disconnect", aliases=["dis", "leave", "l"], description="command_disconnect_description",
              usage="")
-    @cooldown(1, 10, BucketType.user)
+    @cooldown(1, 5, BucketType.user)
     async def disconnect(self, ctx: Context):
         if ctx.voice_client:
             if ctx.voice_client.is_connected:

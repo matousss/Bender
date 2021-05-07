@@ -1,41 +1,25 @@
 import discord
 import discord.ext.commands
 
-__all__ = ['Checks', 'on_command_error',
+__all__ = ['on_command_error',
            'BotMissingPermissions', 'ExtensionLoadError', 'ExtensionInitializeError']
 
-# from bender.bot import Bender
-#
-# from discord.ext.commands import Cog, Context
+from discord.ext.commands import Context
 
 
-# class BenderCog(Cog):
-#     def __init__(self, bot) -> None:
-#         self.bot = bot
-#         self.get_text = bot.get_text
-#         self.get_language = bot.get_language
-#         super().__init__()
-#         print(f"Initialized {str(self.__class__.__name__)}")
-#
-#     pass
-
-
-
-
-class Checks:
-    @staticmethod
-    async def can_join_speak(ctx: discord.ext.commands.Context):
-        return ctx.me.guild_permissions.speak and ctx.me.guild_permissions.connect
+async def can_join_speak(ctx: discord.ext.commands.Context):
+    return ctx.me.guild_permissions.speak and ctx.me.guild_permissions.connect
 
 
 class BotMissingPermissions(discord.ext.commands.CommandError):
+    """Raised when checking for permissions failed"""
     def __init__(self, message=None):
         super().__init__(message or 'Bot is missing permissions for that action.')
 
     pass
 
 
-async def on_command_error(ctx, error):
+async def on_command_error(ctx: Context, error):
     """Default command error handler"""
     try:
         if isinstance(error, discord.ext.commands.CommandNotFound):
@@ -66,7 +50,7 @@ async def on_command_error(ctx, error):
 
 class ExtensionInitializeError(Exception):
     """
-    Raised by packages in bender.modules
+    Raised on error, while initializing stuff from :package: `bender.modules`
     """
 
     def __init__(self, message: str):
@@ -75,7 +59,7 @@ class ExtensionInitializeError(Exception):
 
 class ExtensionLoadError(Exception):
     """
-    Raised by packages in bender.modules
+    Raised on error, while adding stuff from :package: `bender.modules`
     """
 
     def __init__(self, message: str):

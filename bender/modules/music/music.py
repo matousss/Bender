@@ -104,7 +104,7 @@ class MusicPlayer(object):
             raise TypeError(f"voice_client can't be {voice_client.__class__.__name__}")
         if not isinstance(queue, deque):
             raise TypeError(f"queue can't be {queue.__class__.__name__}")
-        self.voice_client = voice_client
+        self.voice_client: VoiceClient = voice_client
         self._queue = queue
         self.now_playing = None
         self.lock = Lock()
@@ -220,8 +220,6 @@ class MusicPlayer(object):
 
         if not song:
             song: None
-            print(f"{str(self)} finished job!")
-
             return
         song: Song
 
