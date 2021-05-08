@@ -95,7 +95,7 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
     @staticmethod
     def replace_last(source_string, replace_what, replace_with):
         head, _sep, tail = source_string.rpartition(replace_what)
-        if not tail.strip().startswith("<@"):
+        if not tail.rstrip().startswith("<@"):
             tail = ""
         return head + replace_with + tail
 
