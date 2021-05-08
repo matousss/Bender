@@ -20,7 +20,7 @@ def setup(bot):
     bot.get_language = bot.database.executor_get_language
     cog.get_language = bot.get_language
     bot.add_cog(cog)
-    print(f"Initialized {cog.__class__.__name__}")
+
 
 
 #

@@ -117,7 +117,7 @@ class NotInSameChannel(CheckFailure):
 
 
 DEFAULT_CONFIG = {
-    'max_queue_length': -1,
+    'max_queue_length': 100,
     'max_song_length': 7200,
     'best_quality': False,
     'max_idle_time': 180,
@@ -293,10 +293,6 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
         bot = ctx.bot
         if song.thumbnail and len(song.thumbnail) > 0:
             embed.set_thumbnail(url=song.thumbnail[1]) if len(song.thumbnail) >= 1 else song.thumbnail[0]
-        # embed.add_field(name=song.details['title'] if song.details['title'] else 'NaN',
-        #                 value=f"https://www.youtube.com/watch?v={song.details['id']}\n["
-        #                       + str((datetime.timedelta(seconds=song.details['duration'])) if
-        #                             song.details['duration'] > 0 else '<NaN>') + "]", inline=False)
         lang = await bot.get_language(ctx)
         embed.add_field(name=bot.get_text("title", lang),
                         value=f"[{song.details['title'] if song.details['title'] else 'NaN'}]"
@@ -614,7 +610,7 @@ class YoutubeMusic(BenderCog, name="Youtube Music", description="cog_youtubemusi
             sb = self.get_text('emptiness', lang)
         if len(queue) > index:
             sb += self.get_text('%d queue_more', lang) % f"``{(len(queue) - index)}``"
-        embed.add_field(name=f"{self.get_text('%d in_queue', lang)}" % len(queue),
+        embed.add_field(name=f"{self.get_text('%s in_queue', lang)}" % len(queue),
                         value=sb,
                         inline=False)
 

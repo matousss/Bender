@@ -126,7 +126,7 @@ class Bender(Bot):
     def setup(self):
         self.loaded_languages = self._message_handler.get_loaded()
         self.get_text = self._message_handler.get_text
-        extensions = ["bender.modules.info", "bender.modules.moderation", "bender.modules.settings",
+        extensions = ["bender.modules.settings", "bender.modules.info", "bender.modules.moderation",
                       "bender.modules.voiceclient", "bender.modules.music.youtube_music"]
         for extension in extensions:
             try:

@@ -34,6 +34,7 @@ class Info(BenderCog, name="Information", description="cog_info_description"):
 
     @command(name="info", description="command_info_description", usage="")
     async def info(self, ctx: Context):
+        print(await self.get_language(ctx))
         await ctx.send(self.get_text("%s info", await self.get_language(ctx)) % f'``{bender.__version__}``')
         pass
 
@@ -54,7 +55,7 @@ class Info(BenderCog, name="Information", description="cog_info_description"):
              usage="command_help_usage")
     @cooldown(1, .2)
     async def help(self, ctx: Context, *, args: Optional[str] = None):
-        lang = await ctx.bot.get_language(ctx)
+        lang = await self.get_language(ctx)
         embed = Embed(color=0xff0000)
         args = args.lower() if args else None
 
