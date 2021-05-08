@@ -2,7 +2,8 @@ import typing
 
 import discord.utils as discord_utils
 from discord import VoiceChannel, Member, HTTPException, Message
-from discord.ext.commands import Context, group, guild_only, MissingRequiredArgument, cooldown
+from discord.ext.commands import Context, group, MissingRequiredArgument, cooldown
+
 from bender.bot import BenderCog
 
 __all__ = ['Moderation']
@@ -151,8 +152,6 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
             await ctx.send(ctx.bot.get_text("%s %s kicked",
                                             await ctx.bot.get_language(ctx)) % (f"``{kicked}/{to_kick}``",
                                                                                 f"``{destination.name}``"))
-
-
 
     @kick.command(name='all', aliases=['a', ' '], description="command_kick_all_description",
                   usage="command_kick_all_usage")
