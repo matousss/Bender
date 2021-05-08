@@ -89,7 +89,7 @@ class Settings(BenderCog, description="cog_settings_description"):
             await ctx.send(self.get_text("%s current_prefix",
                                          await self.get_language(ctx)) % f"``{await ctx.bot.get_prefix(ctx.message)}``")
         else:
-            args = args.lstrip()
+            args = args.strip()
             if len(args) > 5:
                 await ctx.send(self.get_text("prefix_too_long_error", await self.get_language(ctx)))
             else:
@@ -122,7 +122,7 @@ class Settings(BenderCog, description="cog_settings_description"):
                 else:
                     await ctx.send(self.get_text("error_no_languages", lang))
             elif ctx.bot.loaded_languages and args in ctx.bot.loaded_languages:
-                args = args.lstrip()
+                args = args.strip()
                 loop = asyncio.get_running_loop()
                 task = loop.run_in_executor(None, self._database.set_language, ctx.guild.id, args)
 

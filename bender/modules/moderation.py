@@ -94,10 +94,12 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
     @staticmethod
     def replace_last(source_string, replace_what, replace_with):
         head, _sep, tail = source_string.rpartition(replace_what)
+        if not tail.strip().startswith("<@"):
+            tail = ""
         return head + replace_with + tail
 
     @staticmethod
-    def get_raw_channels(message: Message, source_string):
+    def get_raw_channels(message: Message, source_string) -> str:
         channel_names = source_string
         for mention in message.mentions:
             channel_names = Moderation.replace_last(channel_names, f'<@!{mention.id}>', '')
@@ -113,9 +115,9 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
             if ctx.message:
                 args = ctx.message.content.replace(await ctx.bot.get_prefix(ctx.message), '')
                 if args[0] == 'k':
-                    args = args[2:].lstrip()
+                    args = args[2:].strip()
                 elif args[:4] == 'kick':
-                    args = args[:4].lstrip()
+                    args = args[:4].strip()
                 else:
                     return
 
@@ -126,11 +128,13 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
     @staticmethod
     async def kick_command(ctx, args, *, inverted: bool = False):
         destination_name = Moderation.get_raw_channels(ctx.message, args)
+        if destination_name:
+            destination_name = destination_name.strip()
         destination = discord_utils.get(ctx.guild.channels, name=destination_name)
         members = ctx.message.mentions
         roles = ctx.message.role_mentions
-
-        if not destination:
+        print(destination_name)
+        if not destination_name:
             destination: VoiceChannel = ctx.author.voice.channel if (
                     ctx.author.voice and ctx.author.voice.channel) else None
         if not await Moderation.channel_check(ctx, destination):
@@ -169,9 +173,9 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
             if ctx.message:
                 args = ctx.message.content.replace(await ctx.bot.get_prefix(message=ctx.message), '')
                 if args[:2] == 'mv':
-                    args = args[2:].lstrip()
+                    args = args[2:].strip()
                 elif args[:4] == 'move':
-                    args = args[:4].lstrip()
+                    args = args[:4].strip()
                 else:
                     return
                 await ctx.invoke(ctx.bot.get_command('move all'),
@@ -189,9 +193,9 @@ class Moderation(BenderCog, name="Moderation", description="cog_moderation_descr
             _from = discord_utils.get(ctx.guild.channels, name=channel_names[0].strip())
             _to = discord_utils.get(ctx.guild.channels, name=channel_names[1].strip())
             if not _from:
-                _from = discord_utils.get(ctx.guild.channels, name=channel_names[0].replace('.|', ';').lstrip())
+                _from = discord_utils.get(ctx.guild.channels, name=channel_names[0].replace('.|', ';').strip())
             if not _to:
-                _to = discord_utils.get(ctx.guild.channels, name=channel_names[1].replace('.|', ';').lstrip())
+                _to = discord_utils.get(ctx.guild.channels, name=channel_names[1].replace('.|', ';').strip())
 
         else:
             _from = ctx.author.voice.channel if ctx.author.voice and ctx.author.voice.channel else None
