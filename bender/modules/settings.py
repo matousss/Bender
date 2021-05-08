@@ -3,9 +3,10 @@ import os
 import pathlib
 import sqlite3
 import typing
+from sqlite3.dbapi2 import Cursor
 
 from discord import Message, Embed, Guild
-from discord.ext.commands import group, Context, NoPrivateMessage, cooldown, check
+from discord.ext.commands import group, Context, NoPrivateMessage, cooldown
 
 import bender.utils.temp as _temp
 from bender.bot import BenderCog
@@ -22,7 +23,6 @@ def setup(bot):
     bot.add_cog(cog)
 
 
-
 #
 #
 #
@@ -33,7 +33,6 @@ def setup(bot):
 #
 #
 #
-# todo messages shits
 class Settings(BenderCog, description="cog_settings_description"):
     def __init__(self, bot):
 
@@ -143,9 +142,6 @@ class Settings(BenderCog, description="cog_settings_description"):
 
 class Database(object):
     def __init__(self, db_path: typing.Union[os.PathLike, str]):
-        # self.bot: Bot = bot
-        # self.bot.command_prefix = bender_utils.prefix
-        # print(f"Initialized {str(self.__class__.__name__)}")
         if not pathlib.Path(db_path).parent.exists():
             raise ValueError("Given path doesn't exist")
         self._db_path = db_path
@@ -186,7 +182,7 @@ class Database(object):
         connection = self.connect()
         try:
             with connection:
-                cursor = connection.cursor()
+                cursor: Cursor = connection.cursor()
                 cursor.execute(f"""
                     SELECT prefix FROM guilds WHERE id == ?
                 """, (guild_id,))
