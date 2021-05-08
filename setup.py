@@ -8,10 +8,10 @@ setuptools.setup(
     packages=['bender', 'bender.utils', 'bender.modules', 'bender.modules.music'],
     url='',
     license='',
-    author='matousss',
+    author='Jaroslav Matouš',
     author_email='jaroslav.matous@student.gyarab.cz',
     description='Bender - Multipurpose Discord bot',
-    zip_safe=True,
+    zip_safe=False,
     install_requires=[
         'discord.py~=1.7.1',
         'PyNaCl~=1.4.0',
@@ -22,9 +22,9 @@ setuptools.setup(
             'bender = bender.__main__:main',
         ],
     },
-    data_files=[('Lib/site-packages/bender/resources/locales/en/LC_MESSAGES',
+    data_files=[('bender/resources/locales/en/LC_MESSAGES',
                  ['bender/resources/locales/en/LC_MESSAGES/messages.mo']),
-                ('Lib/site-packages/bender/resources/locales/cs/LC_MESSAGES',
+                ('bender/resources/locales/cs/LC_MESSAGES',
                  ['bender/resources/locales/cs/LC_MESSAGES/messages.mo'])]
 
 )

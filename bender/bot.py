@@ -76,7 +76,12 @@ class Bender(Bot):
 
     async def on_ready(self):
         print("\n\n" + f'{self.user} has connected to Discord!\n\n')
-
+        print(f"""Invite link:
+https://discord.com/oauth2/authorize?client_id={(await self.application_info()).id}\
+&permissions=20540416&scope=bot       
+        
+        """
+              )
         print("Connected to servers:")
         for guild in self.guilds:
             print(str(guild) + " (" + str(guild.id) + ")")

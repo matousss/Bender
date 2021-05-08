@@ -44,12 +44,13 @@ def setup(bot):
         except (OSError, ValueError):
             warn(f"Cannot read {config_path}, default configuration loaded")
         except IllegalFormat:
-            warn(f"Config in {config_path} has illegal format, check values or "
-                 f"try deleting it and change values in new one"
-                 f"\n Loaded default configuration")
+            warn(f"""Config in {config_path} has illegal format, 
+check values or try deleting it and change values in new one
+
+Loaded default configuration""")
+
     else:
         config.generate_new()
-
     cog = YoutubeMusic(bot, config=config)
 
     if config['best_quality']:
@@ -147,6 +148,15 @@ class YoutubeMusicConfig(dict):
         with open(self.path, 'r') as file:
             loaded = json.load(file)
         if loaded.keys() == DEFAULT_CONFIG.keys():
+            for k in DEFAULT_CONFIG.keys():
+                if not isinstance(loaded[k], type(DEFAULT_CONFIG[k])):
+                    raise IllegalFormat()
+                try:
+                    if type(loaded[k]) is int and (loaded[k] > sys.maxsize or (loaded[k] < 1 and
+                                                       (k != 'max_queue_length' and loaded[k] != -1))):
+                        raise IllegalFormat()
+                except OverflowError:
+                    raise IllegalFormat()
             self.clear()
             self.update(loaded)
         else:

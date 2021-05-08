@@ -158,8 +158,13 @@ async def start(_token: str, _bot: discord.ext.commands.Bot, is_bot: bool = True
         print("\033[91mCannot reach Discord, please check your internet connection")
         exit_after_enter()
         return
-    await _bot.connect(reconnect=True)
-
+    try:
+        await _bot.connect(reconnect=True)
+    except discord.PrivilegedIntentsRequired:
+        print("\033[91mIntents isn't enabled! It's required to enable \"Server members intent\" at "
+              "https://discord.com/developers/applications")
+        exit_after_enter()
+        return
 
 def main():
     _temp.set_root_path(pathlib.Path(__file__).parent)
