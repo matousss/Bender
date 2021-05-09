@@ -137,11 +137,19 @@ def load_token(_path: os.path):
 
         if len(lines) > 1:
             print(f"File {_path} have invalid content. It must have one line with token!", file=sys.stderr)
-            exit(0)
-        else:
+            exit_after_enter()
+        elif lines:
             return lines[0]
+        else:
+            print(f"File {_path} is empty!", file=sys.stderr)
+            exit_after_enter()
 
     else:
+        try:
+            file = open(_path, 'w')
+            file.close()
+        except Exception:
+            pass
         print("Root directory must contain file token.token with Discord token or "
               "token must be specified as argument: --token <token>", file=sys.stderr)
         exit(0)
@@ -166,6 +174,7 @@ async def start(_token: str, _bot: discord.ext.commands.Bot, is_bot: bool = True
         exit_after_enter()
         return
 
+
 def main():
     _temp.set_root_path(pathlib.Path(__file__).parent)
 
@@ -180,6 +189,9 @@ def main():
             exit(0)
         elif sys.argv[1] in ("--token", "-t"):
             token = sys.argv[2]
+        else:
+            print("Invalid arguments! Try run with --help.")
+            exit(0)
 
     if not token:
         token = load_token(os.path.join(_temp.get_root_path(), "token.token"))

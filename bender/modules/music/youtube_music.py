@@ -20,12 +20,12 @@ from discord.ext.commands import CommandInvokeError, NoPrivateMessage, CheckFail
 from youtube_dl.utils import DownloadError
 
 import bender.utils.bender_utils
+from bender.bot import BenderCog
 from bender.modules.music import settings as player_settings
 from bender.modules.music.music import MusicPlayer, AlreadyPaused, NotPaused, NoResult as YTNoResult, \
     PlayError, QueueFull, QueueEmpty, MusicSearcher
 from bender.modules.music.song import Song
 from bender.utils import temp as _temp, bender_utils
-from bender.bot import BenderCog
 from bender.utils.bender_utils import ExtensionLoadError
 
 __all__ = ['YoutubeMusic']
@@ -33,7 +33,7 @@ __all__ = ['YoutubeMusic']
 
 def setup(bot):
     if not check_ffmpeg():
-        raise ExtensionLoadError(f"{__name__} requires ffmpeg or avconv to work")
+        raise ExtensionLoadError(f"{__name__} requires ffmpeg to work")
 
     config_path = os.path.join(_temp.get_root_path(), "youtube_music.json")
     config = YoutubeMusicConfig(config_path)
@@ -80,19 +80,14 @@ PAGE_SIZE = 10
 
 def check_ffmpeg() -> bool:
     """
-    Check for ffmpeg/avconv
+    Check for ffmpeg
     """
     try:
         subprocess.check_call(['ffmpeg', '-version'],
                               stdout=subprocess.DEVNULL,
                               stderr=subprocess.STDOUT)
     except Exception:
-        try:
-            subprocess.check_call(['avconv', '-version'],
-                                  stdout=subprocess.DEVNULL,
-                                  stderr=subprocess.STDOUT)
-        except Exception:
-            return False
+        return False
     return True
 
 
@@ -153,7 +148,8 @@ class YoutubeMusicConfig(dict):
                     raise IllegalFormat()
                 try:
                     if type(loaded[k]) is int and (loaded[k] > sys.maxsize or (loaded[k] < 1 and
-                                                       (k != 'max_queue_length' and loaded[k] != -1))):
+                                                                               (k != 'max_queue_length' and loaded[
+                                                                                   k] != -1))):
                         raise IllegalFormat()
                 except OverflowError:
                     raise IllegalFormat()

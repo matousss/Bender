@@ -4,7 +4,7 @@ import setuptools
 
 setuptools.setup(
     name='bender',
-    version='0.20.7b0',
+    version='0.20.8',
     packages=['bender', 'bender.utils', 'bender.modules', 'bender.modules.music'],
     url='',
     license='',
@@ -17,6 +17,7 @@ setuptools.setup(
         'PyNaCl~=1.4.0',
         'youtube_dl~=2021.4.7'
     ],
+    python_requires='>=3.7',
     entry_points={
         'console_scripts': [
             'bender = bender.__main__:main',
